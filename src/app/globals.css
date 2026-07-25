@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   BRAND TOKENS — colores reales de Iglesia Digital / TI Network.
+   Cambia aquí los HEX o la tipografía y todo el sitio se actualiza.
+   ===================================================================== */
+:root {
+  /* Fondos (negro con matiz púrpura, como el sitio) */
+  --bg: #0D0A16;
+  --bg2: #150F2E;
+  --panel: #1B1238;
+  --panel2: #241A45;
+  --panel3: #33245D;
+  --line: rgba(255, 255, 255, 0.08);
+  --line2: rgba(255, 255, 255, 0.15);
+
+  /* Violeta de marca (primario) */
+  --brand: #6A3DE8;
+  --brand2: #8A5CFF;
+
+  /* Naranja TI Network (acento / energía) */
+  --accent: #FF5001;
+  --accent-soft: #FF6A2B;
+
+  --text: #F2EEFB;
+  --muted: #9A92C2;
+  --good: #54D6A6;
+
+  --font-d: "Montserrat", system-ui, sans-serif; /* títulos */
+  --font-b: "Inter", system-ui, sans-serif;      /* cuerpo */
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-b);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.rings circle { fill: none; stroke: var(--accent); opacity: 0; transform-origin: center; }
+.rings .r1 { animation: ping2 3.4s ease-out infinite; }
+.rings .r2 { animation: ping2 3.4s ease-out infinite 0.7s; }
+.rings .r3 { animation: ping2 3.4s ease-out infinite 1.4s; }
+.rings .core { fill: var(--accent); stroke: none; opacity: 1; }
+@keyframes ping2 {
+  0% { opacity: 0.6; r: 12px; stroke-width: 2; }
+  80% { opacity: 0; }
+  100% { opacity: 0; r: 62px; stroke-width: 0.5; }
+}
+.hero-grid {
+  background-image: linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 72%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rings circle, .animate-marquee, .animate-float1, .animate-float2 { animation: none !important; }
+}
+
+@layer components {
+  .btn-accent {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 0.625rem; cursor: pointer; white-space: nowrap;
+    border-radius: 13px; background: var(--accent); color: #fff;
+    font-weight: 600; font-size: 16px; padding: 15px 26px;
+    box-shadow: 0 14px 34px -12px rgba(255, 80, 1, 0.6);
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .btn-accent:hover { transform: translateY(-2px); background: var(--accent-soft); }
+}
