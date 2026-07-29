@@ -18,3 +18,6 @@
 
 # sistema
 .DS_Store
+
+# caché de TypeScript
+*.tsbuildinfo
