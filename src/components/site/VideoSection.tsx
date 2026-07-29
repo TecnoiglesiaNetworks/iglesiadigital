@@ -10,8 +10,8 @@ export function VideoSection() {
       <div className="container">
         <Reveal className="mx-auto mb-10 max-w-[680px] text-center">
           <h2 className="font-display text-[clamp(26px,4vw,42px)] font-bold leading-[1.1] tracking-tight">
-            La misión sigue siendo la misma.{" "}
-            <span className="text-brand2">Solo cambió el canal.</span>
+            Tu mensaje del domingo puede seguir{" "}
+            <span className="text-brand2">alcanzando vidas toda la semana.</span>
           </h2>
         </Reveal>
 
@@ -32,7 +32,7 @@ export function VideoSection() {
             </div>
           </div>
           <div className="mt-8 text-center">
-            <Button href="#diagnostico" variant="accent" size="lg">
+            <Button href="/diagnostico" variant="accent" size="lg">
               Haz tu diagnóstico gratis <span>→</span>
             </Button>
           </div>

@@ -35,7 +35,7 @@ function Band({
         <p className="mt-4 text-[16.5px] text-muted">{body}</p>
         {cta && (
           <div className="mt-7">
-            <Button href="#diagnostico" variant="accent">
+            <Button href="/diagnostico" variant="accent">
               Haz tu diagnóstico gratis <span>→</span>
             </Button>
           </div>
@@ -64,8 +64,8 @@ export function Showcase() {
           alt="Equipo de Iglesia Digital"
           imgRight
           eyebrow="Con profesionales"
-          title="Más de 20 años equipando iglesias como la tuya"
-          body="No es solo tecnología: es propósito con dirección. Te acompañamos con la experiencia de haber ayudado a miles de iglesias a impactar más allá de las paredes del templo."
+          title="Más de 16 años equipando iglesias como la tuya"
+          body="Tecnología con propósito y dirección. Te acompañamos con la experiencia de haber ayudado a miles de iglesias a impactar más allá de las paredes del templo."
         />
       </div>
       <div className="container">

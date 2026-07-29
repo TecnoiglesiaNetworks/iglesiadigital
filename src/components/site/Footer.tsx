@@ -1,9 +1,8 @@
 const links = [
   ["#programa", "El programa"],
   ["/temario", "Temario"],
-  ["#diagnostico", "Diagnóstico"],
+  ["/diagnostico", "Diagnóstico"],
   ["https://club.iglesiadigital.net", "Área de miembros"],
-  ["https://wa.me/524778802480", "WhatsApp"],
 ];
 
 export function Footer() {

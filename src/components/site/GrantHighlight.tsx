@@ -23,7 +23,7 @@ export function GrantHighlight() {
                   busca fe, esperanza y una comunidad. Dentro del programa te llevamos paso a paso a
                   activarlo.
                 </p>
-                <Button href="#diagnostico" variant="accent">
+                <Button href="/diagnostico" variant="accent">
                   Ver si mi iglesia califica <span>→</span>
                 </Button>
               </div>

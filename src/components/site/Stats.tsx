@@ -3,10 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useInView } from "framer-motion";
 
 const stats = [
-  { end: 65000, prefix: "", suffix: "+", label: "Iglesias acompañadas" },
-  { end: 20, prefix: "", suffix: "+", label: "Años de experiencia" },
-  { end: 3, prefix: "", suffix: " continentes", label: "LatAm, EE.UU. y Europa" },
-  { end: 10000, prefix: "$", suffix: " USD", label: "Al mes en Google Grant" },
+  { end: 2000, prefix: "", suffix: "+", label: "Iglesias acompañadas" },
+  { end: 16, prefix: "", suffix: "+", label: "Años de experiencia" },
+  { end: 3, prefix: "", suffix: "", label: "Continentes · LatAm, EE.UU. y Europa" },
+  { end: 10000, prefix: "$", suffix: "", label: "USD al mes en Google Grant" },
 ];
 
 function Counter({ end, prefix, suffix }: { end: number; prefix: string; suffix: string }) {

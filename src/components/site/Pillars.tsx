@@ -1,18 +1,24 @@
 import { SectionHead } from "./SectionHead";
 import { Reveal } from "./Reveal";
+import { AuroraBackground } from "@/components/ui/animated-background";
 
 const pillars = [
-  ["01", "Un sitio web con propósito", "Diseñado para recibir y guiar a cada nuevo visitante, no solo para verse bonito."],
-  ["02", "Un equipo digital capacitado", "Voluntarios que saben transmitir, comunicar y dar seguimiento con roles claros."],
-  ["03", "Una estrategia clara", "Para atraer, conectar y discipular a personas en línea con intención, no al azar."],
-  ["04", "Un sistema que trabaja 24/7", "Que sigue evangelizando y dando seguimiento incluso cuando el templo está cerrado."],
+  ["01", "Presencia", "Un sitio web y tu iglesia visible en Google y redes, para que te encuentren justo cuando alguien busca oración, paz o una comunidad."],
+  ["02", "Mensaje", "Tu servicio del domingo y tu contenido llevando el Evangelio en línea durante toda la semana, no solo en el momento en vivo."],
+  ["03", "Conexión", "Formularios, contacto y seguimiento que acompañan a cada persona desde el primer clic hasta que llega a tu iglesia."],
+  ["04", "Resultado", "Personas nuevas, acompañadas y creciendo en la fe. Fruto que permanece, no solo vistas y likes."],
 ];
 
 export function Pillars() {
   return (
-    <section className="py-24">
+    <section className="relative">
+      <AuroraBackground className="border-y border-line py-24">
       <div className="container">
-        <SectionHead eyebrow="Imagina tu iglesia equipada" title="Todo lo que necesitas, trabajando como un solo sistema" />
+        <SectionHead
+          eyebrow="El método Iglesia Digital"
+          title="Cuatro pasos simples: de que te encuentren a que se queden"
+          sub="No necesitas ser experto en tecnología. Sigues un camino claro que convierte tu presencia en línea en personas reales, acompañadas y creciendo en la fe."
+        />
         <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2">
           {pillars.map(([n, t, d], i) => (
             <Reveal key={n} delay={i * 0.08}>
@@ -29,6 +35,7 @@ export function Pillars() {
           ))}
         </div>
       </div>
+      </AuroraBackground>
     </section>
   );
 }

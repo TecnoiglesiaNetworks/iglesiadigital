@@ -1,18 +1,30 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Lock, MailCheck, CalendarDays } from "lucide-react";
 import { questions } from "./quiz-data";
 import { computeResult, type Answers, type Result } from "./scoring";
+import { Combobox, type ComboOption } from "./Combobox";
+import { loadCountries, type CountryOpt } from "./geo";
 import { cn } from "@/lib/utils";
 
 type Screen = "intro" | "quiz" | "gate" | "results";
 const BOOKING_URL = process.env.NEXT_PUBLIC_BOOKING_URL || "#";
+// Cuando tengas el enlace de Calendly, ponlo en .env.local como NEXT_PUBLIC_CALENDLY_URL
+// (ej. https://calendly.com/tu-cuenta/asesoria). Mientras esté vacío se muestra un placeholder.
+const CALENDLY_URL = process.env.NEXT_PUBLIC_CALENDLY_URL || "";
 
 export function AuditQuiz() {
   const [screen, setScreen] = useState<Screen>("intro");
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
-  const [lead, setLead] = useState({ name: "", church: "", email: "", whatsapp: "", city: "" });
+  const [lead, setLead] = useState({ name: "", church: "", email: "" });
+  // Teléfono (código de país + número) y ubicación (país + ciudad).
+  const [countries, setCountries] = useState<CountryOpt[]>([]);
+  const [phoneIso, setPhoneIso] = useState("MX");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [countryIso, setCountryIso] = useState("");
+  const [cityName, setCityName] = useState("");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -26,7 +38,45 @@ export function AuditQuiz() {
     return (idx / total) * 100;
   }, [screen, idx, total]);
 
-  const scrollUp = () => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Solo lleva la tarjeta arriba si su parte superior quedó fuera de la vista
+  // (evita que "brinque" en cada pregunta cuando ya cabe en pantalla).
+  const scrollUp = () => {
+    const el = topRef.current;
+    if (!el) return;
+    if (el.getBoundingClientRect().top < 0) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // Carga la lista de países al llegar al formulario (diferido).
+  useEffect(() => {
+    if (screen === "gate" && countries.length === 0) {
+      loadCountries().then(setCountries).catch(() => {});
+    }
+  }, [screen, countries.length]);
+
+  const countryOptions: ComboOption[] = useMemo(
+    () =>
+      countries.map((c) => ({
+        value: c.iso,
+        label: c.name,
+        flag: c.flag,
+        search: `${c.name} ${c.dial}`.toLowerCase(),
+      })),
+    [countries]
+  );
+  const phoneOptions: ComboOption[] = useMemo(
+    () =>
+      countries.map((c) => ({
+        value: c.iso,
+        label: c.name,
+        sub: `+${c.dial}`,
+        flag: c.flag,
+        search: `${c.name} +${c.dial}`.toLowerCase(),
+      })),
+    [countries]
+  );
+  const phoneCountry = countries.find((c) => c.iso === phoneIso);
 
   function pick(option: (typeof questions)[number]["options"][number]) {
     setAnswers((a) => ({
@@ -60,11 +110,17 @@ export function AuditQuiz() {
     setScreen("results");
     scrollUp();
     setSending(true);
+    // Armamos el teléfono internacional y "Ciudad, País" para el backend.
+    const country = countries.find((c) => c.iso === countryIso);
+    const whatsapp = phoneNumber.trim()
+      ? `+${phoneCountry?.dial ?? ""} ${phoneNumber.trim()}`.trim()
+      : "";
+    const city = [cityName, country?.name].filter(Boolean).join(", ");
     try {
       await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...lead, answers, result: res }),
+        body: JSON.stringify({ ...lead, whatsapp, city, answers, result: res }),
       });
     } catch (e) {
       console.error("No se pudo enviar el lead:", e);
@@ -112,7 +168,7 @@ export function AuditQuiz() {
                   Comenzar mi diagnóstico <span>→</span>
                 </button>
               </div>
-              <p className="mt-3.5 flex justify-center gap-2 text-[12.5px] text-muted">🔒 No compartimos tus datos con nadie.</p>
+              <p className="mt-3.5 flex items-center justify-center gap-2 text-[12.5px] text-muted"><Lock size={13} /> No compartimos tus datos con nadie.</p>
             </motion.div>
           )}
 
@@ -163,20 +219,73 @@ export function AuditQuiz() {
               <Field label="Nombre de tu iglesia" value={lead.church} onChange={(v) => setLead({ ...lead, church: v })} placeholder="Ej. Iglesia Vida Nueva" />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Correo" type="email" value={lead.email} onChange={(v) => setLead({ ...lead, email: v })} placeholder="tu@correo.com" />
-                <Field label="WhatsApp" type="tel" value={lead.whatsapp} onChange={(v) => setLead({ ...lead, whatsapp: v })} placeholder="Con clave de país" />
+                <div className="mb-4">
+                  <label className="mb-1.5 block text-[13.5px] font-medium text-muted">WhatsApp</label>
+                  <div className="flex gap-2">
+                    <Combobox
+                      value={phoneIso}
+                      onChange={setPhoneIso}
+                      options={phoneOptions}
+                      loading={countries.length === 0}
+                      panelWidth={300}
+                      searchPlaceholder="País o código…"
+                      renderTrigger={() => (
+                        <span className="flex flex-none items-center gap-1.5 whitespace-nowrap">
+                          <span className="text-[16px]">{phoneCountry?.flag ?? "🌐"}</span>
+                          <b className="font-medium">+{phoneCountry?.dial ?? ""}</b>
+                        </span>
+                      )}
+                    />
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="Número"
+                      className="w-full rounded-[11px] border border-line bg-panel2 px-3.5 py-3 text-[15.5px] text-ink outline-none placeholder:text-[#5a638f] focus:border-accent"
+                    />
+                  </div>
+                </div>
               </div>
-              <Field label="Ciudad y país" value={lead.city} onChange={(v) => setLead({ ...lead, city: v })} placeholder="Ej. León, México" />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="mb-4">
+                  <label className="mb-1.5 block text-[13.5px] font-medium text-muted">País</label>
+                  <Combobox
+                    value={countryIso}
+                    onChange={setCountryIso}
+                    options={countryOptions}
+                    loading={countries.length === 0}
+                    placeholder="Selecciona tu país"
+                    searchPlaceholder="Buscar país…"
+                    className="w-full"
+                  />
+                </div>
+                <Field
+                  label="Ciudad"
+                  value={cityName}
+                  onChange={setCityName}
+                  placeholder="Escribe tu ciudad"
+                />
+              </div>
               <button onClick={reveal} className="btn-accent mt-1 w-full py-[18px] text-[17px]">Ver mi resultado <span>→</span></button>
-              <p className="mt-3.5 flex gap-2 text-[12.5px] text-muted">🔒 Nada de spam. Solo tu diagnóstico y consejos útiles.</p>
+              <p className="mt-3.5 flex items-center gap-2 text-[12.5px] text-muted"><Lock size={13} className="flex-none" /> Nada de spam. Solo tu diagnóstico y consejos útiles.</p>
             </motion.div>
           )}
 
           {screen === "results" && result && (
             <motion.div key="results" {...fade}>
+              <a href="/" className="mb-6 flex justify-center" aria-label="Ir al inicio">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logos/iglesiadigital-logo.png" alt="Iglesia Digital" className="h-[47px] w-auto" />
+              </a>
               <div className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-accent">
                 {lead.name ? `${lead.name.split(" ")[0]}, este es tu diagnóstico` : "Tu diagnóstico"}
               </div>
               <h2 className="font-display text-[clamp(23px,3.4vw,30px)] font-bold">Estado digital de tu iglesia</h2>
+              <p className="mt-2 flex items-center gap-2 text-[13.5px] text-muted">
+                <MailCheck size={15} className="flex-none text-good" />
+                {sending ? "Enviando el reporte completo a tu correo…" : "Te enviamos también el reporte completo por correo."}
+              </p>
 
               <div className="my-6 flex flex-wrap items-center gap-6">
                 <Gauge pct={result.pct} />
@@ -219,18 +328,28 @@ export function AuditQuiz() {
                 ))}
               </div>
 
-              <div className="mt-6 rounded-[18px] border border-line2 bg-panel2 p-6 text-center">
-                <h3 className="font-display text-[22px] font-bold">Hablemos de tu iglesia, sin costo</h3>
-                <p className="mx-auto mb-4 mt-2 max-w-[42ch] text-[15px] text-muted">
-                  Agenda una asesoría gratuita de 20 minutos. Revisamos tu diagnóstico juntos y te decimos por dónde empezar.
-                </p>
-                <a href={BOOKING_URL} target="_blank" rel="noopener" className="btn-accent w-full py-[18px] text-[17px]">
-                  Agendar mi asesoría gratuita <span>→</span>
-                </a>
-                <span className="mt-3 block text-[13px] text-muted">
-                  {sending ? "Enviando tu reporte…" : "Te enviamos también el reporte completo por correo."}{" "}
-                  <a href="/temario" className="text-accent-soft">Conoce el programa completo →</a>
-                </span>
+              <div className="mt-6 rounded-[18px] border border-line2 bg-panel2 p-6 sm:p-7">
+                {/* VSL */}
+                <div className="text-center">
+                  <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">Antes de agendar, mira esto</div>
+                  <h3 className="mt-1.5 font-display text-[22px] font-bold">Así ayudamos a iglesias como la tuya</h3>
+                </div>
+                <div className="mt-5">
+                  <VslPlaceholder />
+                </div>
+
+                {/* Agenda tu cita */}
+                <div className="mt-9 text-center">
+                  <h3 className="font-display text-[22px] font-bold">Agenda tu cita gratuita</h3>
+                  <p className="mx-auto mb-5 mt-2 max-w-[44ch] text-[15px] text-muted">
+                    Asesoría de 20 minutos, sin costo. Revisamos tu diagnóstico juntos y te decimos por dónde empezar.
+                  </p>
+                </div>
+                <CalendlyEmbed
+                  url={CALENDLY_URL}
+                  fallbackUrl={BOOKING_URL}
+                  prefill={{ name: lead.name, email: lead.email }}
+                />
               </div>
             </motion.div>
           )}
@@ -292,5 +411,78 @@ function Gauge({ pct }: { pct: number }) {
         <small className="text-[11px] uppercase tracking-[0.1em] text-muted">Madurez</small>
       </div>
     </div>
+  );
+}
+
+/* Placeholder del VSL. Cuando tengas el video, reemplaza este componente por el
+   <iframe> de YouTube/Vimeo o un <video> propio, manteniendo el contenedor 16:9. */
+function VslPlaceholder() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-line2 bg-black/60" style={{ paddingTop: "56.25%" }}>
+      <div className="absolute inset-0 grid place-content-center gap-4 text-center">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent shadow-[0_14px_34px_-12px_rgba(255,80,1,0.6)]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff" aria-hidden><path d="M8 5v14l11-7z" /></svg>
+        </span>
+        <span className="text-[13.5px] font-medium text-muted">Aquí irá tu VSL (video) — placeholder</span>
+      </div>
+    </div>
+  );
+}
+
+/* Embed de Calendly. Si NEXT_PUBLIC_CALENDLY_URL está vacío, muestra un placeholder
+   con un botón de respaldo; cuando lo configures, incrusta el calendario en línea.
+   Prellenamos nombre y correo para que la cita quede ligada al lead correcto
+   (el webhook empareja por el correo con el que agendan en Calendly). */
+function CalendlyEmbed({
+  url,
+  fallbackUrl,
+  prefill,
+}: {
+  url: string;
+  fallbackUrl: string;
+  prefill?: { name?: string; email?: string };
+}) {
+  const finalUrl = url
+    ? (() => {
+        try {
+          const u = new URL(url);
+          if (prefill?.name) u.searchParams.set("name", prefill.name);
+          if (prefill?.email) u.searchParams.set("email", prefill.email);
+          return u.toString();
+        } catch {
+          return url;
+        }
+      })()
+    : "";
+
+  useEffect(() => {
+    if (!url) return;
+    const s = document.createElement("script");
+    s.src = "https://assets.calendly.com/assets/external/widget.js";
+    s.async = true;
+    document.body.appendChild(s);
+    return () => {
+      s.remove();
+    };
+  }, [url]);
+
+  if (!url) {
+    return (
+      <div className="grid place-content-center gap-3 rounded-[14px] border border-dashed border-line2 bg-panel3/40 px-6 py-11 text-center">
+        <span className="flex items-center justify-center gap-2 text-[14.5px] font-medium"><CalendarDays size={16} /> Aquí se incrustará tu calendario de Calendly</span>
+        <span className="text-[13px] text-muted">Pega tu enlace en <code className="text-accent-soft">NEXT_PUBLIC_CALENDLY_URL</code> y aparecerá el calendario.</span>
+        <a href={fallbackUrl} target="_blank" rel="noopener" className="btn-accent mx-auto mt-1">
+          Agendar mi asesoría gratuita <span>→</span>
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="calendly-inline-widget overflow-hidden rounded-[14px]"
+      data-url={finalUrl}
+      style={{ minWidth: 320, height: 700 }}
+    />
   );
 }

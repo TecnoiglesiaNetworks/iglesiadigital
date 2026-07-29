@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { SectionHead } from "./SectionHead";
 import { Reveal } from "./Reveal";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,8 @@ export function Pricing() {
           <div className="rounded-[24px] border border-line2 bg-gradient-to-b from-panel2 to-bg2 p-8 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.7)] sm:p-11">
             <ul className="mb-8 grid gap-3 text-left">
               {includes.map((t) => (
-                <li key={t} className="flex gap-3 text-[15.5px] before:font-bold before:text-accent before:content-['✓']">
+                <li key={t} className="flex gap-3 text-[15.5px]">
+                  <Check size={20} strokeWidth={2.5} className="mt-0.5 flex-none text-accent" />
                   {t}
                 </li>
               ))}
@@ -37,7 +39,7 @@ export function Pricing() {
                 className="h-auto w-full max-w-[420px] object-contain"
               />
             </div>
-            <Button href="#diagnostico" variant="accent" size="lg" className="w-full">
+            <Button href="/diagnostico" variant="accent" size="lg" className="w-full">
               Empieza con tu diagnóstico gratis <span>→</span>
             </Button>
             <div className="mt-4 text-center text-[13.5px] text-muted">

@@ -1,0 +1,20 @@
+# dependencias
+/node_modules
+
+# build de Next
+/.next
+/out
+
+# base de datos de leads (SQLite) — nunca subir
+/data
+*.db
+*.db-shm
+*.db-wal
+
+# variables de entorno / secretos
+.env
+.env.local
+.env*.local
+
+# sistema
+.DS_Store

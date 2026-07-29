@@ -14,8 +14,10 @@ export function Marquee() {
       <div className="animate-marquee flex w-max">
         {loop.map((it, i) => (
           <span key={i} className="flex items-center whitespace-nowrap px-[34px] font-display text-[19px] font-semibold text-muted">
-            {it[0]}
-            <b className="text-ink">{it[1]}</b>
+            <span>
+              {it[0]}
+              <b className="text-ink">{it[1]}</b>
+            </span>
             <span className="ml-[34px] h-1.5 w-1.5 rounded-full bg-accent opacity-70" />
           </span>
         ))}

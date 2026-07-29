@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Reveal } from "./Reveal";
+import { AuroraCanvas } from "@/components/ui/ambient-aurora";
 
 const trust = [
-  ["+65,000", "iglesias acompañadas"],
-  ["+20", "años de experiencia"],
+  ["+2,000", "iglesias acompañadas"],
+  ["+16", "años de experiencia"],
   ["16", "semanas paso a paso"],
 ];
 
@@ -18,34 +19,34 @@ export function Hero() {
           className="absolute inset-0 h-full w-full object-cover opacity-20"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-bg/70 via-bg/85 to-bg" />
+        <AuroraCanvas className="absolute inset-0 opacity-45 [mix-blend-mode:screen]" />
         <div className="hero-grid absolute inset-0 opacity-35" />
-        <div className="animate-float1 absolute -top-36 left-1/2 h-[520px] w-[520px] -translate-x-[60%] rounded-full bg-brand opacity-50 blur-[90px]" />
-        <div className="animate-float2 absolute -right-20 top-16 h-[420px] w-[420px] rounded-full bg-accent opacity-30 blur-[90px]" />
       </div>
       <div className="container relative z-10 mx-auto max-w-[860px]">
         <Reveal>
           <span className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-line2 bg-white/[0.05] py-[7px] pl-2 pr-[15px] text-[13.5px] text-muted">
             <b className="rounded-full bg-accent px-[9px] py-[3px] text-[11px] font-bold text-[#ffffff]">NUEVO</b>
-            Diagnóstico digital de tu iglesia en 3 minutos
+            Diagnóstico digital gratis de tu iglesia en 3 minutos
           </span>
         </Reveal>
         <Reveal delay={0.08}>
           <h1 className="font-display text-[clamp(36px,6.6vw,68px)] font-extrabold leading-[1.08] tracking-tight">
-            Multiplica el alcance de tu iglesia{" "}
+            Miles de personas buscan a Dios en internet.{" "}
             <span className="bg-gradient-to-r from-brand2 to-accent bg-clip-text text-transparent">
-              en el mundo digital
+              Haz que encuentren tu iglesia.
             </span>
           </h1>
         </Reveal>
         <Reveal delay={0.16}>
-          <p className="mx-auto mt-6 max-w-[620px] text-[clamp(17px,2.4vw,21px)] text-muted">
-            La misión sigue siendo la misma. Solo cambió el canal. Te damos el sistema, el
-            acompañamiento y las herramientas para que tu iglesia crezca dentro y fuera del templo.
+          <p className="mx-auto mt-6 max-w-[640px] text-[clamp(17px,2.4vw,21px)] text-muted">
+            Cada día buscan oración, paz y respuestas en Google y redes. Iglesia Digital es el
+            sistema, paso a paso y sin que seas experto en tecnología, para que tu iglesia aparezca
+            ahí y acompañe a cada persona desde el primer clic hasta la decisión de fe.
           </p>
         </Reveal>
         <Reveal delay={0.24}>
           <div className="mt-9 flex flex-wrap justify-center gap-3.5">
-            <Button href="#diagnostico" variant="accent" size="lg">
+            <Button href="/diagnostico" variant="accent" size="lg">
               Haz tu diagnóstico gratis <span>→</span>
             </Button>
             <Button href="#programa" variant="ghost" size="lg">

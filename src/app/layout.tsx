@@ -1,15 +1,52 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { SITE, KEYWORDS } from "@/lib/site";
+import { siteGraph } from "@/lib/structured-data";
+
+const TITLE = "Iglesia Digital | Haz crecer tu iglesia en internet y redes — Tecnoiglesia";
+const DESCRIPTION =
+  "Programa de Tecnoiglesia (Pedro Abiú) para hacer crecer tu iglesia en internet y redes sociales. Aprende evangelismo digital: cómo usar las redes para llevar personas a tu iglesia, activar el Google Ad Grant ($10,000 USD/mes gratis), tu servicio en línea y el seguimiento. Diagnóstico gratis.";
 
 export const metadata: Metadata = {
-  title: "Iglesia Digital · Multiplica el alcance de tu iglesia",
-  description:
-    "Formación de 16 semanas para pastores y líderes. Sitio web, Google Ad Grant, embudo espiritual y acompañamiento en vivo. Haz tu diagnóstico digital gratis.",
+  metadataBase: new URL(SITE.url),
+  title: {
+    default: TITLE,
+    template: "%s · Iglesia Digital",
+  },
+  description: DESCRIPTION,
+  keywords: KEYWORDS,
+  authors: [{ name: "Pedro Abiú" }, { name: "Tecnoiglesia", url: SITE.url }],
+  creator: "Pedro Abiú",
+  publisher: "Tecnoiglesia",
+  applicationName: "Iglesia Digital",
+  category: "Religión, Tecnología, Educación",
+  alternates: { canonical: "/" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
-    title: "Iglesia Digital · Multiplica el alcance de tu iglesia",
-    description: "La misión sigue igual. Solo cambió el canal.",
-    locale: "es_MX",
     type: "website",
+    locale: SITE.locale,
+    url: SITE.url,
+    siteName: "Iglesia Digital",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [{ url: SITE.ogImage, width: SITE.ogImageWidth, height: SITE.ogImageHeight, alt: "Iglesia Digital · Tecnoiglesia" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [SITE.ogImage],
   },
 };
 
@@ -23,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <JsonLd data={siteGraph()} />
       </head>
       <body>{children}</body>
     </html>

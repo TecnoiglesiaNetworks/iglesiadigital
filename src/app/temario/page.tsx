@@ -7,9 +7,17 @@ import { Button } from "@/components/ui/button";
 import { TemarioTimeline } from "@/components/temario/TemarioTimeline";
 
 export const metadata: Metadata = {
-  title: "Temario del Programa · Iglesia Digital",
+  title: "Temario del Programa",
   description:
-    "16 semanas paso a paso: fundamentos, construcción digital, tráfico y embudo, lanzamiento y seguimiento. Modalidad híbrida con acompañamiento en vivo por Zoom.",
+    "Temario de Iglesia Digital: 16 semanas paso a paso para hacer crecer tu iglesia en internet. Fundamentos, sitio web y servicio en línea, tráfico y Google Ad Grant, embudo espiritual, lanzamiento y seguimiento. Modalidad híbrida con acompañamiento en vivo por Zoom.",
+  alternates: { canonical: "/temario" },
+  openGraph: {
+    type: "article",
+    url: "/temario",
+    title: "Temario del Programa · Iglesia Digital",
+    description:
+      "16 semanas paso a paso para hacer crecer tu iglesia en internet y redes: sitio web, Google Ad Grant, embudo espiritual y seguimiento.",
+  },
 };
 
 const meta = [
@@ -60,7 +68,7 @@ export default function Temario() {
           </Reveal>
           <Reveal delay={0.24}>
             <div className="mt-9 flex flex-wrap justify-center gap-3.5">
-              <Button href="/#diagnostico" variant="accent" size="lg">
+              <Button href="/diagnostico" variant="accent" size="lg">
                 Me interesa el programa <span>→</span>
               </Button>
               <Button href="/" variant="ghost" size="lg">
@@ -86,7 +94,7 @@ export default function Temario() {
             Empieza con un diagnóstico gratuito y descubre por dónde comenzar tu camino en las 16 semanas.
           </p>
           <div className="flex flex-wrap justify-center gap-3.5">
-            <Button href="/#diagnostico" variant="accent" size="lg">
+            <Button href="/diagnostico" variant="accent" size="lg">
               Haz tu diagnóstico gratis <span>→</span>
             </Button>
             <Button href="/" variant="ghost" size="lg">

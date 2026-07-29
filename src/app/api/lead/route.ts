@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSendgrid } from "@/lib/sendgrid";
 import { reportEmail, notifyEmail } from "@/emails/report-template";
 import { computeResult, type Answers, type Result } from "@/components/quiz/scoring";
+import { upsertLead } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,25 @@ export async function POST(req: Request) {
   const result = answers ? computeResult(answers) : body.result;
   if (!result) {
     return NextResponse.json({ ok: false, error: "Sin respuestas" }, { status: 422 });
+  }
+
+  // Guardamos el lead en la base de datos (para el panel/CRM). No debe romper la
+  // experiencia si algo falla aquí, así que va en su propio try.
+  try {
+    upsertLead({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      church,
+      whatsapp,
+      city,
+      score: result.pct,
+      level: result.level,
+      answers,
+      result,
+      source: "quiz",
+    });
+  } catch (dbErr) {
+    console.error("No se pudo guardar el lead en la base:", dbErr);
   }
 
   const from = {
