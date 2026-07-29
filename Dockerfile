@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Iglesia Digital — imagen para Coolify (Next.js standalone + better-sqlite3)
 # ─────────────────────────────────────────────────────────────────────────────
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 # Dependencias de compilación para módulos nativos (better-sqlite3) por si no hay
 # binario precompilado para la plataforma.
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
