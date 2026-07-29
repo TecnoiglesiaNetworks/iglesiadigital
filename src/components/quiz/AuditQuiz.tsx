@@ -19,6 +19,7 @@ export function AuditQuiz() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
   const [lead, setLead] = useState({ name: "", church: "", email: "" });
+  const [emailError, setEmailError] = useState("");
   // Teléfono (código de país + número) y ubicación (país + ciudad).
   const [countries, setCountries] = useState<CountryOpt[]>([]);
   const [phoneIso, setPhoneIso] = useState("MX");
@@ -101,10 +102,18 @@ export function AuditQuiz() {
   }
 
   async function reveal() {
-    if (!lead.name.trim() || !lead.email.trim()) {
+    const name = lead.name.trim();
+    const email = lead.email.trim();
+    if (!name || !email) {
       alert("Escribe al menos tu nombre y correo para enviarte el reporte.");
       return;
     }
+    // Validamos que el correo tenga formato válido (no cualquier texto).
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Escribe un correo válido, por ejemplo nombre@correo.com");
+      return;
+    }
+    setEmailError("");
     const res = computeResult(answers);
     setResult(res);
     setScreen("results");
@@ -218,7 +227,17 @@ export function AuditQuiz() {
               <Field label="Tu nombre" value={lead.name} onChange={(v) => setLead({ ...lead, name: v })} placeholder="Ej. Pastor Juan Pérez" />
               <Field label="Nombre de tu iglesia" value={lead.church} onChange={(v) => setLead({ ...lead, church: v })} placeholder="Ej. Iglesia Vida Nueva" />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="Correo" type="email" value={lead.email} onChange={(v) => setLead({ ...lead, email: v })} placeholder="tu@correo.com" />
+                <Field
+                  label="Correo"
+                  type="email"
+                  value={lead.email}
+                  onChange={(v) => {
+                    setLead({ ...lead, email: v });
+                    if (emailError) setEmailError("");
+                  }}
+                  placeholder="tu@correo.com"
+                  error={emailError}
+                />
                 <div className="mb-4">
                   <label className="mb-1.5 block text-[13.5px] font-medium text-muted">WhatsApp</label>
                   <div className="flex gap-2">
@@ -365,12 +384,14 @@ function Field({
   onChange,
   placeholder,
   type = "text",
+  error,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   type?: string;
+  error?: string;
 }) {
   return (
     <div className="mb-4">
@@ -380,8 +401,13 @@ function Field({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-[11px] border border-line bg-panel2 px-3.5 py-3 text-[15.5px] text-ink outline-none placeholder:text-[#5a638f] focus:border-accent"
+        aria-invalid={!!error}
+        className={cn(
+          "w-full rounded-[11px] border bg-panel2 px-3.5 py-3 text-[15.5px] text-ink outline-none placeholder:text-[#5a638f] focus:border-accent",
+          error ? "border-red-500/70" : "border-line"
+        )}
       />
+      {error && <p className="mt-1.5 text-[12.5px] text-red-400">{error}</p>}
     </div>
   );
 }
