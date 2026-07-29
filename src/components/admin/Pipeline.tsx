@@ -3,13 +3,14 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGroup, motion } from "framer-motion";
 import {
-  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3,
+  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGES, STAGE_LABEL, TEMP_CLASS, type Lead, type StageId } from "./stages";
 import { LeadDrawer } from "./LeadDrawer";
 import { AddLeadModal } from "./AddLeadModal";
 import { UsersModal } from "./UsersModal";
+import { IntegrationsModal } from "./IntegrationsModal";
 
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
@@ -31,6 +32,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const [selected, setSelected] = useState<Lead | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [usersOpen, setUsersOpen] = useState(false);
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [dragId, setDragId] = useState<number | null>(null);
   const [overStage, setOverStage] = useState<StageId | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -159,6 +161,13 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
           >
             <BarChart3 size={15} /> Reportes
           </a>
+          <button
+            onClick={() => setIntegrationsOpen(true)}
+            title="Integración Calendly (webhook)"
+            className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+          >
+            <Webhook size={16} />
+          </button>
           <button
             onClick={() => setUsersOpen(true)}
             title="Usuarios del panel"
@@ -293,6 +302,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
       )}
       {addOpen && <AddLeadModal onClose={() => setAddOpen(false)} onCreated={refresh} />}
       {usersOpen && <UsersModal onClose={() => setUsersOpen(false)} />}
+      {integrationsOpen && <IntegrationsModal onClose={() => setIntegrationsOpen(false)} />}
     </div>
   );
 }
