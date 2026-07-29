@@ -9,10 +9,16 @@ import { loadCountries, type CountryOpt } from "./geo";
 import { cn } from "@/lib/utils";
 
 type Screen = "intro" | "quiz" | "gate" | "results";
-const BOOKING_URL = process.env.NEXT_PUBLIC_BOOKING_URL || "#";
-// Cuando tengas el enlace de Calendly, ponlo en .env.local como NEXT_PUBLIC_CALENDLY_URL
-// (ej. https://calendly.com/tu-cuenta/asesoria). Mientras esté vacío se muestra un placeholder.
-const CALENDLY_URL = process.env.NEXT_PUBLIC_CALENDLY_URL || "";
+
+// Enlace de Calendly. Se puede sobreescribir con NEXT_PUBLIC_CALENDLY_URL, pero
+// dejamos un valor por defecto para que el calendario aparezca siempre (las
+// variables NEXT_PUBLIC_* deben existir en build; el valor no es secreto).
+const CALENDLY_URL =
+  process.env.NEXT_PUBLIC_CALENDLY_URL ||
+  "https://calendly.com/tecnoiglesianetwork/asesoria-iglesia-digital?hide_event_type_details=1&hide_gdpr_banner=1&primary_color=ff5001";
+const BOOKING_URL =
+  process.env.NEXT_PUBLIC_BOOKING_URL ||
+  "https://calendly.com/tecnoiglesianetwork/asesoria-iglesia-digital";
 
 export function AuditQuiz() {
   const [screen, setScreen] = useState<Screen>("intro");
