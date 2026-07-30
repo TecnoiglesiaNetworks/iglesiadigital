@@ -164,7 +164,7 @@ export function AuditQuiz() {
         <div className="h-full bg-gradient-to-r from-brand to-accent transition-[width] duration-500" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="p-7 sm:p-11">
+      <div className="p-5 sm:p-11">
         <AnimatePresence mode="wait">
           {screen === "intro" && (
             <motion.div key="intro" {...fade}>
@@ -180,10 +180,10 @@ export function AuditQuiz() {
               <p className="mx-auto mt-2.5 max-w-[46ch] text-center text-[16px] text-muted">
                 Un diagnóstico honesto y personalizado. Sin costo, sin compromiso.
               </p>
-              <div className="my-7 flex justify-center gap-6 text-[14px] text-muted">
-                <span className="inline-flex items-center gap-2 before:h-1 before:w-1 before:rounded-full before:bg-accent before:content-['']"><b className="text-ink">8</b> preguntas</span>
-                <span className="inline-flex items-center gap-2 before:h-1 before:w-1 before:rounded-full before:bg-accent before:content-['']"><b className="text-ink">3</b> min</span>
-                <span className="inline-flex items-center gap-2 before:h-1 before:w-1 before:rounded-full before:bg-accent before:content-['']">Resultado <b className="text-ink">al instante</b></span>
+              <div className="my-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[14px] text-muted">
+                <span className="inline-flex items-center gap-2 whitespace-nowrap before:h-1 before:w-1 before:rounded-full before:bg-accent before:content-['']"><b className="text-ink">8</b> preguntas</span>
+                <span className="inline-flex items-center gap-2 whitespace-nowrap before:h-1 before:w-1 before:rounded-full before:bg-accent before:content-['']"><b className="text-ink">3</b> min</span>
+                <span className="inline-flex items-center gap-2 whitespace-nowrap before:h-1 before:w-1 before:rounded-full before:bg-accent before:content-['']">Resultado <b className="text-ink">al instante</b></span>
               </div>
               <div className="text-center">
                 <button onClick={() => { setIdx(0); setScreen("quiz"); }} className="btn-accent">
@@ -376,13 +376,13 @@ export function AuditQuiz() {
                 ))}
               </div>
 
-              <div className="mt-6 rounded-[18px] border border-line2 bg-panel2 p-6 sm:p-7">
+              <div className="mt-6 overflow-hidden rounded-[18px] border border-line2 bg-panel2 p-4 sm:p-7">
                 {/* VSL */}
                 <div className="text-center">
                   <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">Antes de agendar, mira esto</div>
                   <h3 className="mt-1.5 font-display text-[22px] font-bold">Así ayudamos a iglesias como la tuya</h3>
                 </div>
-                <div className="mt-5">
+                <div className="mt-5 -mx-4 sm:mx-0">
                   <VslPlaceholder />
                 </div>
 
@@ -393,11 +393,13 @@ export function AuditQuiz() {
                     Asesoría de 20 minutos, sin costo. Revisamos tu diagnóstico juntos y te decimos por dónde empezar.
                   </p>
                 </div>
-                <CalendlyEmbed
-                  url={CALENDLY_URL}
-                  fallbackUrl={BOOKING_URL}
-                  prefill={{ name: lead.name, email: lead.email }}
-                />
+                <div className="-mx-4 sm:mx-0">
+                  <CalendlyEmbed
+                    url={CALENDLY_URL}
+                    fallbackUrl={BOOKING_URL}
+                    prefill={{ name: lead.name, email: lead.email }}
+                  />
+                </div>
               </div>
             </motion.div>
           )}
@@ -535,9 +537,9 @@ function CalendlyEmbed({
 
   return (
     <div
-      className="calendly-inline-widget overflow-hidden rounded-[14px]"
+      className="calendly-inline-widget w-full overflow-hidden rounded-[14px]"
       data-url={finalUrl}
-      style={{ minWidth: 320, height: 700 }}
+      style={{ minWidth: 0, height: 700 }}
     />
   );
 }
