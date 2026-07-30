@@ -25,7 +25,8 @@ export function AuditQuiz() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
   const [lead, setLead] = useState({ name: "", church: "", email: "" });
-  const [emailError, setEmailError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const clearError = (key: string) => setErrors((e) => (e[key] ? { ...e, [key]: "" } : e));
   // Teléfono (código de país + número) y ubicación (país + ciudad).
   const [countries, setCountries] = useState<CountryOpt[]>([]);
   const [phoneIso, setPhoneIso] = useState("MX");
@@ -108,18 +109,24 @@ export function AuditQuiz() {
   }
 
   async function reveal() {
+    // Todos los campos son obligatorios; mostramos errores en línea.
     const name = lead.name.trim();
+    const church = lead.church.trim();
     const email = lead.email.trim();
-    if (!name || !email) {
-      alert("Escribe al menos tu nombre y correo para enviarte el reporte.");
+    const errs: Record<string, string> = {};
+    if (!name) errs.name = "Escribe tu nombre";
+    if (!church) errs.church = "Escribe el nombre de tu iglesia";
+    if (!email) errs.email = "Escribe tu correo";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      errs.email = "Escribe un correo válido, por ejemplo nombre@correo.com";
+    if (!phoneNumber.trim()) errs.phone = "Escribe tu número de WhatsApp";
+    if (!countryIso) errs.country = "Selecciona tu país";
+    if (!cityName.trim()) errs.city = "Escribe tu ciudad";
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      scrollUp();
       return;
     }
-    // Validamos que el correo tenga formato válido (no cualquier texto).
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError("Escribe un correo válido, por ejemplo nombre@correo.com");
-      return;
-    }
-    setEmailError("");
     const res = computeResult(answers);
     setResult(res);
     setScreen("results");
@@ -230,19 +237,28 @@ export function AuditQuiz() {
               <p className="mb-6 mt-2.5 text-[16px] text-muted">
                 ¿A dónde te enviamos el reporte completo con tu plan de acción? Verás tu resultado en la siguiente pantalla.
               </p>
-              <Field label="Tu nombre" value={lead.name} onChange={(v) => setLead({ ...lead, name: v })} placeholder="Ej. Pastor Juan Pérez" />
-              <Field label="Nombre de tu iglesia" value={lead.church} onChange={(v) => setLead({ ...lead, church: v })} placeholder="Ej. Iglesia Vida Nueva" />
+              <Field
+                label="Tu nombre"
+                value={lead.name}
+                onChange={(v) => { setLead({ ...lead, name: v }); clearError("name"); }}
+                placeholder="Ej. Pastor Juan Pérez"
+                error={errors.name}
+              />
+              <Field
+                label="Nombre de tu iglesia"
+                value={lead.church}
+                onChange={(v) => { setLead({ ...lead, church: v }); clearError("church"); }}
+                placeholder="Ej. Iglesia Vida Nueva"
+                error={errors.church}
+              />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field
                   label="Correo"
                   type="email"
                   value={lead.email}
-                  onChange={(v) => {
-                    setLead({ ...lead, email: v });
-                    if (emailError) setEmailError("");
-                  }}
+                  onChange={(v) => { setLead({ ...lead, email: v }); clearError("email"); }}
                   placeholder="tu@correo.com"
-                  error={emailError}
+                  error={errors.email}
                 />
                 <div className="mb-4">
                   <label className="mb-1.5 block text-[13.5px] font-medium text-muted">WhatsApp</label>
@@ -265,11 +281,16 @@ export function AuditQuiz() {
                       type="tel"
                       inputMode="numeric"
                       value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))}
+                      onChange={(e) => { setPhoneNumber(e.target.value.replace(/[^0-9]/g, "")); clearError("phone"); }}
                       placeholder="Número"
-                      className="w-full rounded-[11px] border border-line bg-panel2 px-3.5 py-3 text-[15.5px] text-ink outline-none placeholder:text-[#5a638f] focus:border-accent"
+                      aria-invalid={!!errors.phone}
+                      className={cn(
+                        "w-full rounded-[11px] border bg-panel2 px-3.5 py-3 text-[15.5px] text-ink outline-none placeholder:text-[#5a638f] focus:border-accent",
+                        errors.phone ? "border-red-500/70" : "border-line"
+                      )}
                     />
                   </div>
+                  {errors.phone && <p className="mt-1.5 text-[12.5px] text-red-400">{errors.phone}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -277,19 +298,21 @@ export function AuditQuiz() {
                   <label className="mb-1.5 block text-[13.5px] font-medium text-muted">País</label>
                   <Combobox
                     value={countryIso}
-                    onChange={setCountryIso}
+                    onChange={(v) => { setCountryIso(v); clearError("country"); }}
                     options={countryOptions}
                     loading={countries.length === 0}
                     placeholder="Selecciona tu país"
                     searchPlaceholder="Buscar país…"
-                    className="w-full"
+                    className={cn("w-full", errors.country && "ring-1 ring-red-500")}
                   />
+                  {errors.country && <p className="mt-1.5 text-[12.5px] text-red-400">{errors.country}</p>}
                 </div>
                 <Field
                   label="Ciudad"
                   value={cityName}
-                  onChange={setCityName}
+                  onChange={(v) => { setCityName(v); clearError("city"); }}
                   placeholder="Escribe tu ciudad"
+                  error={errors.city}
                 />
               </div>
               <button onClick={reveal} className="btn-accent mt-1 w-full py-[18px] text-[17px]">Ver mi resultado <span>→</span></button>
