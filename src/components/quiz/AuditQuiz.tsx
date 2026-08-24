@@ -394,9 +394,9 @@ export function AuditQuiz() {
                   <h3 className="mt-2 font-display text-[clamp(21px,3vw,25px)] font-bold">
                     Lleva el {OFFER_PRODUCT} hoy
                   </h3>
-                  <div className="mt-4 flex items-end justify-center gap-3">
-                    <span className="text-[26px] font-semibold text-red-500 line-through">${OFFER_PRICE_OLD} {OFFER_CURRENCY}</span>
-                    <span className="font-display text-[clamp(34px,6vw,44px)] font-extrabold leading-none text-green-400">
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                    <span className="whitespace-nowrap text-[22px] font-semibold text-red-500 line-through">${OFFER_PRICE_OLD} {OFFER_CURRENCY}</span>
+                    <span className="whitespace-nowrap font-display text-[clamp(34px,8vw,44px)] font-extrabold leading-none text-green-400">
                       ${OFFER_PRICE} {OFFER_CURRENCY}
                     </span>
                   </div>
