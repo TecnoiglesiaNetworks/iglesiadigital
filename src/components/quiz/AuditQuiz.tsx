@@ -388,19 +388,19 @@ export function AuditQuiz() {
                 {/* Oferta especial + pago */}
                 <div className="mt-9 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-6 text-center sm:p-7">
                   <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
-                    🔥 Oferta especial · Solo por tiempo limitado
+                    🎉 Precio de aniversario · Solo por poco tiempo
                   </div>
                   <h3 className="mt-2 font-display text-[clamp(21px,3vw,25px)] font-bold">
                     Lleva el {OFFER_PRODUCT} hoy
                   </h3>
                   <div className="mt-4 flex items-end justify-center gap-3">
-                    <span className="text-[19px] text-muted line-through">${OFFER_PRICE_OLD} {OFFER_CURRENCY}</span>
-                    <span className="font-display text-[clamp(34px,6vw,44px)] font-extrabold leading-none text-accent">
+                    <span className="text-[26px] font-semibold text-red-500 line-through">${OFFER_PRICE_OLD} {OFFER_CURRENCY}</span>
+                    <span className="font-display text-[clamp(34px,6vw,44px)] font-extrabold leading-none text-green-400">
                       ${OFFER_PRICE} {OFFER_CURRENCY}
                     </span>
                   </div>
-                  <p className="mx-auto mt-2 max-w-[42ch] text-[14.5px] text-muted">
-                    Ahorras ${Number(OFFER_PRICE_OLD) - Number(OFFER_PRICE)} {OFFER_CURRENCY}. Precio de lanzamiento, por poco tiempo.
+                  <p className="mx-auto mt-3 max-w-[46ch] text-[14.5px] text-muted">
+                    Incluye acceso al <b className="text-ink">curso de 16 semanas</b> con <b className="text-ink">Zoom en vivo cada 15 días</b>.
                   </p>
                   <div className="mx-auto mt-6 max-w-[420px]">
                     <PayPalCheckout lead={{ name: lead.name, email: lead.email, church: lead.church }} />
