@@ -742,7 +742,11 @@ function PayPalCheckout({
 
   return (
     <div>
-      <div ref={ref} />
+      {/* Fondo blanco: el formulario de tarjeta de PayPal usa texto gris oscuro
+         (aviso legal, "dirección de facturación", etc.) pensado para fondo claro. */}
+      <div className="rounded-2xl bg-white p-3 sm:p-4">
+        <div ref={ref} />
+      </div>
       {status === "error" && <p className="mt-2 text-[13px] text-red-400">{msg}</p>}
       <p className="mt-3 text-[12px] text-white/70">Pago seguro con PayPal · No necesitas cuenta, puedes pagar con tarjeta.</p>
     </div>
