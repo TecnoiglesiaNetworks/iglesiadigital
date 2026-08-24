@@ -360,6 +360,9 @@ function LeadCard({
         </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        {lead.paid ? (
+          <span className="rounded-md bg-green-100 px-1.5 py-0.5 text-[11px] font-semibold text-green-700">✓ pagado</span>
+        ) : null}
         <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${TEMP_CLASS[lead.temperature] || "bg-slate-300 text-white"}`}>
           {lead.temperature === "frio" ? "frío" : lead.temperature}
         </span>

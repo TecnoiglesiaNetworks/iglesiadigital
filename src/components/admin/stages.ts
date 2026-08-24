@@ -55,4 +55,8 @@ export type Lead = {
   notes: string | null;
   scheduled_at: string | null;
   calendly_uri: string | null;
+  paid: number;
+  paid_at: string | null;
+  paid_amount: string | null;
+  paypal_order_id: string | null;
 };

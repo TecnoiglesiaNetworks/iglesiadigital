@@ -45,6 +45,24 @@ function init(): Database.Database {
       created_at TEXT NOT NULL
     );
   `);
+
+  // Migración: columnas de pago (para bases creadas antes de esta versión).
+  // Envuelto en try/catch por si dos procesos (workers del build) corren a la vez
+  // y uno alcanza a agregar la columna primero ("duplicate column name").
+  const addColumn = (ddl: string) => {
+    try {
+      db.exec(ddl);
+    } catch (e) {
+      if (!String((e as Error)?.message || "").includes("duplicate column")) throw e;
+    }
+  };
+  const cols = db.prepare("PRAGMA table_info(leads)").all() as { name: string }[];
+  const has = (c: string) => cols.some((x) => x.name === c);
+  if (!has("paid")) addColumn("ALTER TABLE leads ADD COLUMN paid INTEGER NOT NULL DEFAULT 0");
+  if (!has("paid_at")) addColumn("ALTER TABLE leads ADD COLUMN paid_at TEXT");
+  if (!has("paid_amount")) addColumn("ALTER TABLE leads ADD COLUMN paid_amount TEXT");
+  if (!has("paypal_order_id")) addColumn("ALTER TABLE leads ADD COLUMN paypal_order_id TEXT");
+
   return db;
 }
 
@@ -70,6 +88,10 @@ export type LeadRow = {
   notes: string | null;
   scheduled_at: string | null;
   calendly_uri: string | null;
+  paid: number;
+  paid_at: string | null;
+  paid_amount: string | null;
+  paypal_order_id: string | null;
 };
 
 export type LeadInput = {
@@ -206,4 +228,35 @@ export function markScheduledByEmail(
     ).run(scheduledAt, calendlyUri, nextStatus, now, lead.id);
   }
   return getLead(lead.id);
+}
+
+// Marca como pagado al lead con ese email (lo crea si no existía, para no perder
+// la venta). Al pagar lo movemos a "ganado" salvo que ya estuviera "perdido".
+export function markPaidByEmail(
+  email: string,
+  info: { name?: string; orderId?: string; amount?: string; currency?: string }
+): LeadRow {
+  const now = new Date().toISOString();
+  const norm = email.trim().toLowerCase();
+  let lead = db.prepare("SELECT * FROM leads WHERE email = ?").get(norm) as LeadRow | undefined;
+  if (!lead) {
+    lead = upsertLead({ name: info.name?.trim() || norm, email: norm, source: "pago" });
+  }
+  const amount =
+    info.amount != null && info.currency
+      ? `${info.amount} ${info.currency}`
+      : info.amount ?? null;
+  const nextStatus = lead.status === "perdido" ? lead.status : "ganado";
+  db.prepare(
+    `UPDATE leads SET paid = 1, paid_at = @paid_at, paid_amount = @amount,
+       paypal_order_id = @order, status = @status, updated_at = @now WHERE id = @id`
+  ).run({
+    id: lead.id,
+    paid_at: now,
+    amount,
+    order: info.orderId ?? null,
+    status: nextStatus,
+    now,
+  });
+  return getLead(lead.id) as LeadRow;
 }

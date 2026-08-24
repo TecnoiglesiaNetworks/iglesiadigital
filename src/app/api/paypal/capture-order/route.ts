@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPayPalAccessToken, PAYPAL_BASE } from "@/lib/paypal";
+import { markPaidByEmail } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -33,8 +34,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Registro básico del pago (aparece en los logs del servidor). Aquí se puede
-    // enganchar con la base de datos / pipeline para marcar al lead como pagado.
     console.log("[paypal] pago capturado", {
       orderID,
       status: data.status,
@@ -42,6 +41,24 @@ export async function POST(req: Request) {
       name: body?.name,
       church: body?.church,
     });
+
+    // Si el cobro se completó, marcamos al lead como pagado en el panel.
+    if (data.status === "COMPLETED") {
+      try {
+        const cap = data?.purchase_units?.[0]?.payments?.captures?.[0];
+        const email = String(body?.email || data?.payer?.email_address || "").trim();
+        if (email) {
+          markPaidByEmail(email, {
+            name: body?.name,
+            orderId: data.id || orderID,
+            amount: cap?.amount?.value,
+            currency: cap?.amount?.currency_code,
+          });
+        }
+      } catch (dbErr) {
+        console.error("[paypal] no se pudo marcar el lead como pagado:", dbErr);
+      }
+    }
 
     return NextResponse.json({ status: data.status, id: data.id });
   } catch (e: any) {

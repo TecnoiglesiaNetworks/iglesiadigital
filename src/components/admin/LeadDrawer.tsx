@@ -114,6 +114,22 @@ export function LeadDrawer({
             </Row>
           </div>
 
+          {/* Compra pagada */}
+          {lead.paid ? (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-green-700">
+                ✅ Compra pagada
+              </div>
+              <p className="mt-1 text-sm font-medium text-green-900">
+                {lead.paid_amount || "Pago recibido"}
+              </p>
+              <p className="text-xs text-green-700">
+                {fmtDateTime(lead.paid_at)}
+                {lead.paypal_order_id ? ` · Orden ${lead.paypal_order_id}` : ""}
+              </p>
+            </div>
+          ) : null}
+
           {/* Cita de Calendly */}
           {lead.scheduled_at && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">

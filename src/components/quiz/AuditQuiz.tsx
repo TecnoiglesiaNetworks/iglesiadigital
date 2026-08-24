@@ -675,6 +675,8 @@ function PayPalCheckout({
             const d = await r.json();
             if (d.status === "COMPLETED") {
               setStatus("paid");
+              // Llevamos al comprador a la página de gracias (accesos por correo).
+              window.location.assign("/gracias");
             } else {
               setStatus("error");
               setMsg("No pudimos confirmar el pago. Si se te cobró, escríbenos.");
