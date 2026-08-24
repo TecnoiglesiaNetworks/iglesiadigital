@@ -11,7 +11,7 @@ const links = [
   { href: "/diagnostico", label: "Diagnóstico" },
 ];
 
-const MEMBERS_URL = "https://club.iglesiadigital.net/";
+const MEMBERS_URL = "https://hotmart.com/en/club/iglesiadigital";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
