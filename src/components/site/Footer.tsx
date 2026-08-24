@@ -2,7 +2,7 @@ const links = [
   ["#programa", "El programa"],
   ["/temario", "Temario"],
   ["/diagnostico", "Diagnóstico"],
-  ["https://club.iglesiadigital.net", "Área de miembros"],
+  ["https://hotmart.com/en/club/iglesiadigital", "Área de miembros"],
 ];
 
 export function Footer() {
