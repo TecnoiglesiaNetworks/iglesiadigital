@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Lock, MailCheck, CheckCircle2 } from "lucide-react";
+import { Lock, MailCheck, CheckCircle2, Volume2 } from "lucide-react";
 import { questions } from "./quiz-data";
 import { computeResult, type Answers, type Result } from "./scoring";
 import { Combobox, type ComboOption } from "./Combobox";
@@ -478,12 +478,21 @@ function Gauge({ pct }: { pct: number }) {
   );
 }
 
-/* VSL (video de venta) alojado en Bunny Stream, en contenedor 16:9. */
+/* VSL (video de venta) alojado en Bunny Stream, en contenedor 16:9.
+   Los navegadores bloquean el autoplay con sonido, así que arranca silenciado y
+   mostramos un botón "activar sonido": al tocarlo (gesto del usuario) recargamos
+   el video con audio, que ya sí está permitido. */
 function VslVideo() {
+  const [sound, setSound] = useState(false);
+  const base =
+    "https://iframe.mediadelivery.net/embed/480304/a34257ab-679c-4d2c-90fe-87fb1f008f7e";
+  const src = `${base}?autoplay=true&loop=false&muted=${sound ? "false" : "true"}&preload=true&responsive=true`;
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line2 bg-black/60" style={{ paddingTop: "56.25%" }}>
       <iframe
-        src="https://iframe.mediadelivery.net/embed/480304/a34257ab-679c-4d2c-90fe-87fb1f008f7e?autoplay=true&loop=false&muted=true&preload=true&responsive=true"
+        key={sound ? "on" : "off"}
+        src={src}
         loading="lazy"
         className="absolute inset-0 h-full w-full"
         style={{ border: 0 }}
@@ -491,6 +500,19 @@ function VslVideo() {
         allowFullScreen
         title="Así ayudamos a iglesias como la tuya"
       />
+      {!sound && (
+        <button
+          type="button"
+          onClick={() => setSound(true)}
+          aria-label="Activar sonido"
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/25 text-white transition hover:bg-black/35"
+        >
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-accent shadow-[0_14px_34px_-12px_rgba(255,80,1,0.6)]">
+            <Volume2 size={26} />
+          </span>
+          <span className="text-[14px] font-semibold drop-shadow">Toca para activar el sonido</span>
+        </button>
+      )}
     </div>
   );
 }
