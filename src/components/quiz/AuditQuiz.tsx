@@ -382,7 +382,7 @@ export function AuditQuiz() {
                   <h3 className="mt-1.5 font-display text-[22px] font-bold">Así ayudamos a iglesias como la tuya</h3>
                 </div>
                 <div className="mt-5 -mx-4 sm:mx-0">
-                  <VslPlaceholder />
+                  <VslVideo />
                 </div>
 
                 {/* Oferta especial + pago */}
@@ -478,17 +478,19 @@ function Gauge({ pct }: { pct: number }) {
   );
 }
 
-/* Placeholder del VSL. Cuando tengas el video, reemplaza este componente por el
-   <iframe> de YouTube/Vimeo o un <video> propio, manteniendo el contenedor 16:9. */
-function VslPlaceholder() {
+/* VSL (video de venta) alojado en Bunny Stream, en contenedor 16:9. */
+function VslVideo() {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line2 bg-black/60" style={{ paddingTop: "56.25%" }}>
-      <div className="absolute inset-0 grid place-content-center gap-4 text-center">
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent shadow-[0_14px_34px_-12px_rgba(255,80,1,0.6)]">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff" aria-hidden><path d="M8 5v14l11-7z" /></svg>
-        </span>
-        <span className="text-[13.5px] font-medium text-muted">Aquí irá tu VSL (video) — placeholder</span>
-      </div>
+      <iframe
+        src="https://iframe.mediadelivery.net/embed/480304/a34257ab-679c-4d2c-90fe-87fb1f008f7e?autoplay=true&loop=false&muted=true&preload=true&responsive=true"
+        loading="lazy"
+        className="absolute inset-0 h-full w-full"
+        style={{ border: 0 }}
+        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
+        allowFullScreen
+        title="Así ayudamos a iglesias como la tuya"
+      />
     </div>
   );
 }
