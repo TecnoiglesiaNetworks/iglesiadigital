@@ -744,7 +744,7 @@ function PayPalCheckout({
     <div>
       <div ref={ref} />
       {status === "error" && <p className="mt-2 text-[13px] text-red-400">{msg}</p>}
-      <p className="mt-3 text-[12px] text-muted">Pago seguro con PayPal · No necesitas cuenta, puedes pagar con tarjeta.</p>
+      <p className="mt-3 text-[12px] text-white/70">Pago seguro con PayPal · No necesitas cuenta, puedes pagar con tarjeta.</p>
     </div>
   );
 }
