@@ -543,7 +543,6 @@ function VslVideo() {
         ref={iframeRef}
         key={reload ? "reload" : "main"}
         src={src}
-        loading="lazy"
         className="absolute inset-0 h-full w-full"
         style={{ border: 0 }}
         allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
@@ -560,7 +559,7 @@ function VslVideo() {
           <span className="grid h-16 w-16 place-items-center rounded-full bg-accent shadow-[0_14px_34px_-12px_rgba(255,80,1,0.6)]">
             <Volume2 size={26} />
           </span>
-          <span className="text-[14px] font-semibold drop-shadow">Toca para activar el sonido</span>
+          <span className="text-[14px] font-semibold drop-shadow">Toca para reproducir con sonido</span>
         </button>
       )}
     </div>
