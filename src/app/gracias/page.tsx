@@ -33,14 +33,15 @@ export default function GraciasPage() {
               ¡Gracias por tu compra! 🎉
             </h1>
             <p className="mx-auto mt-3 max-w-[44ch] text-[15.5px] text-muted">
-              Recibimos tu pago correctamente. En breve te enviaremos los{" "}
+              Recibimos tu pago correctamente y durante las próximas horas te
+              enviaremos los{" "}
               <b className="text-ink">accesos al programa a tu correo electrónico</b>.
             </p>
             <p className="mx-auto mt-3 max-w-[44ch] text-[14px] text-muted">
               Revisa tu bandeja de entrada (y la carpeta de spam/promociones). Si en
-              unos minutos no llega, escríbenos a{" "}
-              <a href="mailto:hola@iglesiadigital.net" className="text-accent-soft hover:underline">
-                hola@iglesiadigital.net
+              un máximo de 24 horas no llega, escríbenos a{" "}
+              <a href="mailto:contacto@tecnoiglesia.com" className="text-accent-soft hover:underline">
+                contacto@tecnoiglesia.com
               </a>
               .
             </p>
