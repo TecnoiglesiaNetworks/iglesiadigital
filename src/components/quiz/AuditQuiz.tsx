@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Lock, MailCheck, CalendarDays } from "lucide-react";
+import { Lock, MailCheck, CheckCircle2 } from "lucide-react";
 import { questions } from "./quiz-data";
 import { computeResult, type Answers, type Result } from "./scoring";
 import { Combobox, type ComboOption } from "./Combobox";
@@ -10,15 +10,14 @@ import { cn } from "@/lib/utils";
 
 type Screen = "intro" | "quiz" | "gate" | "results";
 
-// Enlace de Calendly. Se puede sobreescribir con NEXT_PUBLIC_CALENDLY_URL, pero
-// dejamos un valor por defecto para que el calendario aparezca siempre (las
-// variables NEXT_PUBLIC_* deben existir en build; el valor no es secreto).
-const CALENDLY_URL =
-  process.env.NEXT_PUBLIC_CALENDLY_URL ||
-  "https://calendly.com/tecnoiglesianetwork/asesoria-iglesia-digital?hide_event_type_details=1&hide_gdpr_banner=1&primary_color=ff5001";
-const BOOKING_URL =
-  process.env.NEXT_PUBLIC_BOOKING_URL ||
-  "https://calendly.com/tecnoiglesianetwork/asesoria-iglesia-digital";
+// Oferta y pago con PayPal. El Client ID es público (se usa en el SDK del
+// navegador); el secreto vive solo en el servidor (.env.local). El precio real
+// del cobro se controla desde el backend con PAYPAL_PRICE.
+const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "";
+const OFFER_CURRENCY = process.env.NEXT_PUBLIC_PAYPAL_CURRENCY || "USD";
+const OFFER_PRICE = "97";
+const OFFER_PRICE_OLD = "497";
+const OFFER_PRODUCT = "Programa Iglesia Digital";
 
 export function AuditQuiz() {
   const [screen, setScreen] = useState<Screen>("intro");
@@ -386,19 +385,26 @@ export function AuditQuiz() {
                   <VslPlaceholder />
                 </div>
 
-                {/* Agenda tu cita */}
-                <div className="mt-9 text-center">
-                  <h3 className="font-display text-[22px] font-bold">Agenda tu cita gratuita</h3>
-                  <p className="mx-auto mb-5 mt-2 max-w-[44ch] text-[15px] text-muted">
-                    Asesoría de 20 minutos, sin costo. Revisamos tu diagnóstico juntos y te decimos por dónde empezar.
+                {/* Oferta especial + pago */}
+                <div className="mt-9 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-6 text-center sm:p-7">
+                  <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
+                    🔥 Oferta especial · Solo por tiempo limitado
+                  </div>
+                  <h3 className="mt-2 font-display text-[clamp(21px,3vw,25px)] font-bold">
+                    Lleva el {OFFER_PRODUCT} hoy
+                  </h3>
+                  <div className="mt-4 flex items-end justify-center gap-3">
+                    <span className="text-[19px] text-muted line-through">${OFFER_PRICE_OLD} {OFFER_CURRENCY}</span>
+                    <span className="font-display text-[clamp(34px,6vw,44px)] font-extrabold leading-none text-accent">
+                      ${OFFER_PRICE} {OFFER_CURRENCY}
+                    </span>
+                  </div>
+                  <p className="mx-auto mt-2 max-w-[42ch] text-[14.5px] text-muted">
+                    Ahorras ${Number(OFFER_PRICE_OLD) - Number(OFFER_PRICE)} {OFFER_CURRENCY}. Precio de lanzamiento, por poco tiempo.
                   </p>
-                </div>
-                <div className="-mx-4 sm:mx-0">
-                  <CalendlyEmbed
-                    url={CALENDLY_URL}
-                    fallbackUrl={BOOKING_URL}
-                    prefill={{ name: lead.name, email: lead.email }}
-                  />
+                  <div className="mx-auto mt-6 max-w-[420px]">
+                    <PayPalCheckout lead={{ name: lead.name, email: lead.email, church: lead.church }} />
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -486,60 +492,120 @@ function VslPlaceholder() {
   );
 }
 
-/* Embed de Calendly. Si NEXT_PUBLIC_CALENDLY_URL está vacío, muestra un placeholder
-   con un botón de respaldo; cuando lo configures, incrusta el calendario en línea.
-   Prellenamos nombre y correo para que la cita quede ligada al lead correcto
-   (el webhook empareja por el correo con el que agendan en Calendly). */
-function CalendlyEmbed({
-  url,
-  fallbackUrl,
-  prefill,
+/* Pago embebido con PayPal (botones inteligentes + tarjeta sin cuenta).
+   El SDK se carga con el Client ID público. La orden se crea y se captura en el
+   servidor (/api/paypal/*), donde vive el secreto y el precio real del cobro.
+   Prellenamos y enviamos los datos del lead para poder ligarlo al pago. */
+function PayPalCheckout({
+  lead,
 }: {
-  url: string;
-  fallbackUrl: string;
-  prefill?: { name?: string; email?: string };
+  lead: { name: string; email: string; church?: string };
 }) {
-  const finalUrl = url
-    ? (() => {
-        try {
-          const u = new URL(url);
-          if (prefill?.name) u.searchParams.set("name", prefill.name);
-          if (prefill?.email) u.searchParams.set("email", prefill.email);
-          return u.toString();
-        } catch {
-          return url;
-        }
-      })()
-    : "";
+  const ref = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<"idle" | "paid" | "error">("idle");
+  const [msg, setMsg] = useState("");
+  // Mantiene los datos del lead frescos dentro de los callbacks del SDK.
+  const leadRef = useRef(lead);
+  leadRef.current = lead;
 
   useEffect(() => {
-    if (!url) return;
-    const s = document.createElement("script");
-    s.src = "https://assets.calendly.com/assets/external/widget.js";
-    s.async = true;
-    document.body.appendChild(s);
-    return () => {
-      s.remove();
-    };
-  }, [url]);
+    if (!PAYPAL_CLIENT_ID) return;
+    let cancelled = false;
 
-  if (!url) {
+    const render = () => {
+      const paypal = (window as any).paypal;
+      if (!paypal || !ref.current || cancelled) return;
+      ref.current.innerHTML = "";
+      paypal
+        .Buttons({
+          style: { layout: "vertical", color: "gold", shape: "pill", label: "pay" },
+          createOrder: async () => {
+            const r = await fetch("/api/paypal/create-order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(leadRef.current),
+            });
+            const d = await r.json();
+            if (!d.id) throw new Error(d.error || "No se pudo crear la orden");
+            return d.id as string;
+          },
+          onApprove: async (data: any) => {
+            const r = await fetch("/api/paypal/capture-order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderID: data.orderID, ...leadRef.current }),
+            });
+            const d = await r.json();
+            if (d.status === "COMPLETED") {
+              setStatus("paid");
+            } else {
+              setStatus("error");
+              setMsg("No pudimos confirmar el pago. Si se te cobró, escríbenos.");
+            }
+          },
+          onError: () => {
+            setStatus("error");
+            setMsg("Ocurrió un error con el pago. Intenta de nuevo.");
+          },
+        })
+        .render(ref.current);
+    };
+
+    if ((window as any).paypal) {
+      render();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const id = "paypal-sdk";
+    let s = document.getElementById(id) as HTMLScriptElement | null;
+    if (!s) {
+      s = document.createElement("script");
+      s.id = id;
+      s.src =
+        `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(PAYPAL_CLIENT_ID)}` +
+        `&currency=${OFFER_CURRENCY}&enable-funding=card&disable-funding=paylater`;
+      s.async = true;
+      s.addEventListener("load", render);
+      document.body.appendChild(s);
+    } else {
+      s.addEventListener("load", render);
+      if ((window as any).paypal) render();
+    }
+    return () => {
+      cancelled = true;
+      s?.removeEventListener("load", render);
+    };
+  }, []);
+
+  if (!PAYPAL_CLIENT_ID) {
     return (
-      <div className="grid place-content-center gap-3 rounded-[14px] border border-dashed border-line2 bg-panel3/40 px-6 py-11 text-center">
-        <span className="flex items-center justify-center gap-2 text-[14.5px] font-medium"><CalendarDays size={16} /> Aquí se incrustará tu calendario de Calendly</span>
-        <span className="text-[13px] text-muted">Pega tu enlace en <code className="text-accent-soft">NEXT_PUBLIC_CALENDLY_URL</code> y aparecerá el calendario.</span>
-        <a href={fallbackUrl} target="_blank" rel="noopener" className="btn-accent mx-auto mt-1">
-          Agendar mi asesoría gratuita <span>→</span>
-        </a>
+      <div className="grid place-content-center gap-2 rounded-[14px] border border-dashed border-line2 bg-panel3/40 px-6 py-9 text-center">
+        <span className="text-[14.5px] font-medium">Aquí se mostrará el pago con PayPal y tarjeta</span>
+        <span className="text-[13px] text-muted">
+          Configura <code className="text-accent-soft">NEXT_PUBLIC_PAYPAL_CLIENT_ID</code> para activarlo.
+        </span>
+      </div>
+    );
+  }
+
+  if (status === "paid") {
+    return (
+      <div className="grid place-content-center gap-2 rounded-[14px] border border-good/40 bg-good/[0.08] px-6 py-9 text-center">
+        <span className="flex items-center justify-center gap-2 text-[15.5px] font-semibold text-good">
+          <CheckCircle2 size={18} /> ¡Pago recibido! Gracias por inscribirte.
+        </span>
+        <span className="text-[13.5px] text-muted">Te enviaremos los siguientes pasos a {lead.email}.</span>
       </div>
     );
   }
 
   return (
-    <div
-      className="calendly-inline-widget w-full overflow-hidden rounded-[14px]"
-      data-url={finalUrl}
-      style={{ minWidth: 0, height: 700 }}
-    />
+    <div>
+      <div ref={ref} />
+      {status === "error" && <p className="mt-2 text-[13px] text-red-400">{msg}</p>}
+      <p className="mt-3 text-[12px] text-muted">Pago seguro con PayPal · No necesitas cuenta, puedes pagar con tarjeta.</p>
+    </div>
   );
 }
