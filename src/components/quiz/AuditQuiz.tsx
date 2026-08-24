@@ -494,18 +494,34 @@ function VslVideo() {
 
   // Carga player.js y conecta con el iframe para poder controlar el audio.
   useEffect(() => {
+    let alive = true;
     const id = "bunny-playerjs";
     const setup = () => {
       const PJ = (window as any).playerjs;
       if (!PJ || !iframeRef.current || playerRef.current) return;
       const p = new PJ.Player(iframeRef.current);
+      // Si el player ya reproduce con sonido (Chrome lo permite o recordó la
+      // preferencia del usuario), ocultamos el botón de "activar sonido".
+      const syncSound = () => {
+        try {
+          p.getMuted((muted: boolean) => {
+            if (alive && !muted) setSound(true);
+          });
+        } catch {
+          /* si getMuted no existe, dejamos el botón visible */
+        }
+      };
       p.on("ready", () => {
         playerRef.current = p;
+        syncSound();
+        setTimeout(syncSound, 1200);
       });
     };
     if ((window as any).playerjs) {
       setup();
-      return;
+      return () => {
+        alive = false;
+      };
     }
     let s = document.getElementById(id) as HTMLScriptElement | null;
     if (!s) {
@@ -518,6 +534,10 @@ function VslVideo() {
     } else {
       s.addEventListener("load", setup);
     }
+    return () => {
+      alive = false;
+      s?.removeEventListener("load", setup);
+    };
   }, []);
 
   const enableSound = () => {
