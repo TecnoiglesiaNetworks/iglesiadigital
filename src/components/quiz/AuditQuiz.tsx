@@ -479,19 +479,69 @@ function Gauge({ pct }: { pct: number }) {
 }
 
 /* VSL (video de venta) alojado en Bunny Stream, en contenedor 16:9.
-   Los navegadores bloquean el autoplay con sonido, así que arranca silenciado y
-   mostramos un botón "activar sonido": al tocarlo (gesto del usuario) recargamos
-   el video con audio, que ya sí está permitido. */
+   Los navegadores bloquean el autoplay con sonido, así que arranca silenciado.
+   Al tocar "activar sonido" usamos la API player.js de Bunny para quitar el mute
+   sobre el mismo video en marcha (sin recargar ni reiniciar). Si por alguna razón
+   la librería no cargó, recargamos con audio como respaldo. */
 function VslVideo() {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<any>(null);
   const [sound, setSound] = useState(false);
+  const [reload, setReload] = useState(false);
   const base =
     "https://iframe.mediadelivery.net/embed/480304/a34257ab-679c-4d2c-90fe-87fb1f008f7e";
-  const src = `${base}?autoplay=true&loop=false&muted=${sound ? "false" : "true"}&preload=true&responsive=true`;
+  const src = `${base}?autoplay=true&loop=false&muted=${reload ? "false" : "true"}&preload=true&responsive=true`;
+
+  // Carga player.js y conecta con el iframe para poder controlar el audio.
+  useEffect(() => {
+    const id = "bunny-playerjs";
+    const setup = () => {
+      const PJ = (window as any).playerjs;
+      if (!PJ || !iframeRef.current || playerRef.current) return;
+      const p = new PJ.Player(iframeRef.current);
+      p.on("ready", () => {
+        playerRef.current = p;
+      });
+    };
+    if ((window as any).playerjs) {
+      setup();
+      return;
+    }
+    let s = document.getElementById(id) as HTMLScriptElement | null;
+    if (!s) {
+      s = document.createElement("script");
+      s.id = id;
+      s.src = "https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js";
+      s.async = true;
+      s.addEventListener("load", setup);
+      document.body.appendChild(s);
+    } else {
+      s.addEventListener("load", setup);
+    }
+  }, []);
+
+  const enableSound = () => {
+    setSound(true);
+    const p = playerRef.current;
+    if (p) {
+      try {
+        p.unmute();
+        p.setVolume(100);
+        p.play();
+        return;
+      } catch {
+        /* cae al respaldo */
+      }
+    }
+    // Respaldo: si player.js no está listo, recargamos con audio (reinicia).
+    setReload(true);
+  };
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line2 bg-black/60" style={{ paddingTop: "56.25%" }}>
       <iframe
-        key={sound ? "on" : "off"}
+        ref={iframeRef}
+        key={reload ? "reload" : "main"}
         src={src}
         loading="lazy"
         className="absolute inset-0 h-full w-full"
@@ -503,7 +553,7 @@ function VslVideo() {
       {!sound && (
         <button
           type="button"
-          onClick={() => setSound(true)}
+          onClick={enableSound}
           aria-label="Activar sonido"
           className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/25 text-white transition hover:bg-black/35"
         >
