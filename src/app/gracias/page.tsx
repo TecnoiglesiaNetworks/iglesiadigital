@@ -8,8 +8,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const MEMBERS_URL = "https://hotmart.com/en/club/iglesiadigital";
-
 export default function GraciasPage() {
   return (
     <main className="relative">
@@ -46,10 +44,7 @@ export default function GraciasPage() {
               .
             </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a href={MEMBERS_URL} target="_blank" rel="noopener" className="btn-accent">
-                Ir al área de miembros <span>→</span>
-              </a>
+            <div className="mt-8 flex items-center justify-center">
               <Link href="/" className="text-[14.5px] text-muted hover:text-ink">
                 Volver al inicio
               </Link>
