@@ -53,6 +53,13 @@ function init(): Database.Database {
       sent_at  TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_email_log_lead ON email_log(lead_id);
+
+    CREATE TABLE IF NOT EXISTS email_templates (
+      step       INTEGER PRIMARY KEY,
+      subject    TEXT NOT NULL,
+      body       TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   // Migración: columnas de pago (para bases creadas antes de esta versión).
@@ -334,6 +341,26 @@ export function getEmailLog(
   return db
     .prepare("SELECT step, subject, sent_at FROM email_log WHERE lead_id=? ORDER BY sent_at ASC")
     .all(leadId) as { step: number; subject: string | null; sent_at: string }[];
+}
+
+// ── Plantillas editables de los correos ───────────────────────────────────────
+// Si un paso tiene override guardado, el motor lo usa en vez del texto por defecto.
+export function getTemplate(step: number): { subject: string; body: string } | undefined {
+  return db.prepare("SELECT subject, body FROM email_templates WHERE step=?").get(step) as
+    | { subject: string; body: string }
+    | undefined;
+}
+
+export function setTemplate(step: number, subject: string, body: string): void {
+  db.prepare(
+    `INSERT INTO email_templates (step, subject, body, updated_at)
+     VALUES (@step, @subject, @body, @now)
+     ON CONFLICT(step) DO UPDATE SET subject=@subject, body=@body, updated_at=@now`
+  ).run({ step, subject, body, now: new Date().toISOString() });
+}
+
+export function resetTemplate(step: number): void {
+  db.prepare("DELETE FROM email_templates WHERE step=?").run(step);
 }
 
 // Estadísticas globales de la secuencia (para la vista general del admin).

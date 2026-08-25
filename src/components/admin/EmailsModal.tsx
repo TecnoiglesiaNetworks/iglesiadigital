@@ -1,8 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
-import { X, Mail, Loader2, Eye, EyeOff } from "lucide-react";
+import { X, Mail, Loader2, Eye, EyeOff, Pencil, Save, RotateCcw } from "lucide-react";
 
-type Step = { n: number; whenLabel: string; subject: string; html: string };
+type Step = {
+  n: number;
+  whenLabel: string;
+  subjectRaw: string;
+  bodyRaw: string;
+  subjectPreview: string;
+  html: string;
+  edited: boolean;
+};
 type Stats = {
   active: number;
   paused: number;
@@ -17,6 +25,9 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
   const [steps, setSteps] = useState<Step[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [open, setOpen] = useState<number | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [form, setForm] = useState({ subject: "", body: "" });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -33,11 +44,37 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
+  function startEdit(s: Step) {
+    setEditing(s.n);
+    setOpen(null);
+    setForm({ subject: s.subjectRaw, body: s.bodyRaw });
+  }
+
+  async function save(step: number, reset = false) {
+    setSaving(true);
+    const res = await fetch("/api/admin/sequence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        reset ? { step: step - 1, reset: true } : { step: step - 1, subject: form.subject, body: form.body }
+      ),
+    });
+    const d = await res.json().catch(() => ({}));
+    setSaving(false);
+    if (d?.ok) {
+      setSteps(d.steps || []);
+      setStats(d.stats || stats);
+      setEditing(null);
+    } else {
+      alert(d?.error || "No se pudo guardar");
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-[720px] flex-col rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[90vh] w-full max-w-[760px] flex-col rounded-2xl bg-white shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
@@ -55,7 +92,6 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <>
-              {/* Estadísticas */}
               {stats && (
                 <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Stat label="En secuencia" value={stats.active} color="text-green-600" />
@@ -66,20 +102,20 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
               )}
 
               <p className="mb-4 text-[13px] text-slate-500">
-                Estos son los correos que reciben los leads que no pagan. Vista previa con datos de
-                ejemplo. Para ajustar un texto, dime cuál y lo cambio.
+                Estos son los correos que reciben los leads que no pagan. Puedes editar cada texto y
+                ver la vista previa.
               </p>
 
-              {/* Lista de correos */}
               <div className="space-y-3">
                 {steps.map((s) => {
                   const sent = stats?.sentByStep[s.n - 1] ?? 0;
                   const isOpen = open === s.n;
+                  const isEditing = editing === s.n;
                   return (
                     <div key={s.n} className="rounded-xl border border-slate-200">
                       <div className="flex items-start justify-between gap-3 p-4">
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className="grid h-6 w-6 flex-none place-items-center rounded-md bg-violet-100 text-[12px] font-bold text-violet-700">
                               {s.n}
                             </span>
@@ -89,24 +125,90 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
                             <span className="rounded-md bg-green-50 px-2 py-0.5 text-[11.5px] font-medium text-green-700">
                               {sent} enviado{sent === 1 ? "" : "s"}
                             </span>
+                            {s.edited && (
+                              <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11.5px] font-medium text-amber-700">
+                                editado
+                              </span>
+                            )}
                           </div>
-                          <p className="mt-1.5 truncate text-sm font-semibold text-slate-800">{s.subject}</p>
+                          <p className="mt-1.5 truncate text-sm font-semibold text-slate-800">
+                            {s.subjectPreview}
+                          </p>
                         </div>
-                        <button
-                          onClick={() => setOpen(isOpen ? null : s.n)}
-                          className="inline-flex flex-none items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-[12.5px] font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          {isOpen ? <EyeOff size={13} /> : <Eye size={13} />}
-                          {isOpen ? "Ocultar" : "Vista previa"}
-                        </button>
+                        {!isEditing && (
+                          <div className="flex flex-none gap-1.5">
+                            <button
+                              onClick={() => setOpen(isOpen ? null : s.n)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-[12.5px] font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              {isOpen ? <EyeOff size={13} /> : <Eye size={13} />}
+                              {isOpen ? "Ocultar" : "Ver"}
+                            </button>
+                            <button
+                              onClick={() => startEdit(s)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-[12.5px] font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              <Pencil size={13} /> Editar
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      {isOpen && (
+
+                      {isOpen && !isEditing && (
                         <div className="border-t border-slate-100 p-4">
                           <iframe
                             srcDoc={s.html}
                             title={`Correo ${s.n}`}
                             className="h-[460px] w-full rounded-lg border border-slate-200 bg-white"
                           />
+                        </div>
+                      )}
+
+                      {isEditing && (
+                        <div className="border-t border-slate-100 p-4">
+                          <label className="mb-1 block text-[12.5px] font-medium text-slate-500">Asunto</label>
+                          <input
+                            value={form.subject}
+                            onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+                            className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-violet-500"
+                          />
+                          <label className="mb-1 block text-[12.5px] font-medium text-slate-500">Texto del correo</label>
+                          <textarea
+                            value={form.body}
+                            onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                            rows={14}
+                            className="w-full rounded-lg border border-slate-300 p-3 font-mono text-[13px] leading-relaxed outline-none focus:border-violet-500"
+                          />
+                          <div className="mt-2 rounded-lg bg-slate-50 p-3 text-[12px] text-slate-500">
+                            <b>Cómo escribir:</b> cada línea es un párrafo · <code>{"{nombre}"}</code> y{" "}
+                            <code>{"{iglesia}"}</code> se rellenan solos · <code>**negrita**</code> para resaltar ·
+                            una línea con <code>[OFERTA:Texto del botón]</code> pone el botón de pago ·{" "}
+                            <code>[ZOOM:Texto del botón]</code> pone el botón de la llamada.
+                          </div>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <button
+                              onClick={() => save(s.n)}
+                              disabled={saving}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                            >
+                              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Guardar
+                            </button>
+                            <button
+                              onClick={() => setEditing(null)}
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                            >
+                              Cancelar
+                            </button>
+                            {s.edited && (
+                              <button
+                                onClick={() => save(s.n, true)}
+                                disabled={saving}
+                                className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                <RotateCcw size={13} /> Restaurar original
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
