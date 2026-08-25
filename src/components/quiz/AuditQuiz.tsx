@@ -765,6 +765,12 @@ function PayPalCheckout({
       {/* Fondo blanco: el formulario de tarjeta de PayPal usa texto gris oscuro
          (aviso legal, "dirección de facturación", etc.) pensado para fondo claro. */}
       <div className="rounded-2xl bg-white p-3 sm:p-4">
+        {/* PayPal a veces colapsa el botón de tarjeta a solo el ícono cuando el
+           ancho es reducido (p.ej. navegador de Instagram). Esta etiqueta deja
+           claro que el botón negro también sirve para pagar con tarjeta. */}
+        <p className="mb-2.5 text-center text-[12.5px] font-medium text-slate-600">
+          Paga con PayPal o con tarjeta de crédito/débito 💳
+        </p>
         <div ref={ref} />
       </div>
       {status === "error" && <p className="mt-2 text-[13px] text-red-400">{msg}</p>}
