@@ -4,7 +4,7 @@
 FROM node:22-slim AS base
 # Dependencias de compilación para módulos nativos (better-sqlite3) por si no hay
 # binario precompilado para la plataforma.
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ curl \
   && rm -rf /var/lib/apt/lists/*
 
 # ── Dependencias ─────────────────────────────────────────────────────────────
