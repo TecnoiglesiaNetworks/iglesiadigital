@@ -1,4 +1,4 @@
-import { getSendgrid } from "./sendgrid";
+import { sendEmail, mailerReady } from "./mailer";
 import {
   dueSequenceLeads,
   setSequence,
@@ -157,17 +157,10 @@ export async function processSequence(): Promise<{ sent: number; errors: number 
   const due = dueSequenceLeads(now.toISOString());
   if (due.length === 0) return { sent: 0, errors: 0 };
 
-  let sg;
-  try {
-    sg = getSendgrid();
-  } catch (e) {
-    console.error("[sequence] SendGrid no configurado:", e);
+  if (!mailerReady()) {
+    console.error("[sequence] Resend no configurado (falta RESEND_API_KEY).");
     return { sent: 0, errors: 0 };
   }
-  const from = {
-    email: process.env.LEAD_FROM_EMAIL || "hola@iglesiadigital.net",
-    name: process.env.LEAD_FROM_NAME || "Pedro Abiú · Iglesia Digital",
-  };
 
   let sent = 0;
   let errors = 0;
@@ -180,7 +173,7 @@ export async function processSequence(): Promise<{ sent: number; errors: number 
     }
     try {
       const subject = step.subject(lead);
-      await sg.send({ to: lead.email, from, subject, html: shell(step.body(lead)) });
+      await sendEmail({ to: lead.email, subject, html: shell(step.body(lead)) });
       logSequenceEmail(lead.id, i, subject);
 
       const nextIdx = i + 1;
