@@ -3,7 +3,7 @@ import type { Result } from "@/components/quiz/scoring";
 type LeadInfo = { name: string; church?: string; city?: string };
 
 /** Correo HTML con el reporte personalizado que recibe el prospecto. */
-export function reportEmail(lead: LeadInfo, result: Result, bookingUrl: string) {
+export function reportEmail(lead: LeadInfo, result: Result, bookingUrl: string, offerUrl?: string) {
   const first = lead.name?.split(" ")[0] || "Hola";
   const bars = result.dims
     .map(
@@ -53,6 +53,13 @@ export function reportEmail(lead: LeadInfo, result: Result, bookingUrl: string) 
       <table width="100%" cellpadding="0" cellspacing="0">${wins}</table>
       <div style="text-align:center;margin-top:26px">
         <a href="${bookingUrl}" style="display:inline-block;background:#FF5001;color:#ffffff;font-weight:700;text-decoration:none;padding:15px 28px;border-radius:12px;font-size:16px">Agendar mi asesoría gratuita →</a>
+        ${
+          offerUrl
+            ? `<div style="margin-top:14px">
+        <a href="${offerUrl}" style="display:inline-block;color:#6A3DE8;font-weight:600;text-decoration:none;font-size:14px;border-bottom:1px solid #d9cffb;padding-bottom:1px">O inscríbete ya con el precio de aniversario ($97) →</a>
+      </div>`
+            : ""
+        }
       </div>
       <p style="color:#99a;font-size:12px;text-align:center;margin-top:18px">Este diagnóstico es orientativo, basado en tus respuestas.</p>
     </div>

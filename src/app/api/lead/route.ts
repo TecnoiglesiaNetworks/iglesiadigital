@@ -61,13 +61,19 @@ export async function POST(req: Request) {
   const notify = process.env.LEAD_NOTIFY_EMAIL;
   // Botón "Agendar mi asesoría gratuita" del reporte → agenda de Zoom (Calendly).
   const bookingUrl = "https://calendly.com/tecnoiglesianetwork/onboarding-curso-ede";
+  // Botón secundario → oferta directa (con los datos del lead para ligar el pago).
+  const base = process.env.PUBLIC_BASE_URL || "https://iglesiadigital.net";
+  const offerParams = new URLSearchParams({ email: email.trim().toLowerCase() });
+  if (name) offerParams.set("name", name.trim());
+  if (church) offerParams.set("church", church.trim());
+  const offerUrl = `${base}/oferta?${offerParams.toString()}`;
 
   try {
     // 1) Reporte al prospecto
     await sendEmail({
       to: email,
       subject: `${name.split(" ")[0]}, tu diagnóstico digital (${result.pct}%) 📊`,
-      html: reportEmail({ name, church, city }, result, bookingUrl),
+      html: reportEmail({ name, church, city }, result, bookingUrl, offerUrl),
     });
 
     // 2) Aviso interno al equipo (opcional)
