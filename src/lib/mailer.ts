@@ -6,8 +6,10 @@ type Mail = { to: string; subject: string; html: string; replyTo?: string };
 
 export function mailFrom() {
   const email = process.env.LEAD_FROM_EMAIL || "hola@iglesiadigital.net";
-  const name = process.env.LEAD_FROM_NAME || "Iglesia Digital";
-  return `${name} <${email}>`;
+  const name = (process.env.LEAD_FROM_NAME || "Iglesia Digital").replace(/"/g, "");
+  // El nombre va entre comillas: si trae caracteres especiales (·, comas, etc.)
+  // algunos proveedores rechazan el remitente sin comillar.
+  return `"${name}" <${email}>`;
 }
 
 export function mailerReady() {
