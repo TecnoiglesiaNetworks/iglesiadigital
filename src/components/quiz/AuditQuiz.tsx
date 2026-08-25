@@ -158,12 +158,12 @@ export function AuditQuiz() {
   };
 
   return (
-    <div ref={topRef} className="mx-auto max-w-[720px] overflow-hidden rounded-[26px] border border-line2 bg-gradient-to-b from-panel to-bg2 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.7)]">
+    <div ref={topRef} className="mx-auto max-w-[760px] overflow-hidden rounded-[26px] border border-line2 bg-gradient-to-b from-panel to-bg2 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.7)]">
       <div className="h-[5px] bg-white/[0.07]">
         <div className="h-full bg-gradient-to-r from-brand to-accent transition-[width] duration-500" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="p-5 sm:p-11">
+      <div className="p-4 sm:p-11">
         <AnimatePresence mode="wait">
           {screen === "intro" && (
             <motion.div key="intro" {...fade}>
@@ -386,7 +386,7 @@ export function AuditQuiz() {
                 </div>
 
                 {/* Oferta especial + pago */}
-                <div className="mt-9 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-6 text-center sm:p-7">
+                <div className="mt-9 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">
                   <CountdownOffer seconds={600} />
                   <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
                     🎉 Precio de aniversario · Solo por poco tiempo
@@ -403,7 +403,7 @@ export function AuditQuiz() {
                   <p className="mx-auto mt-3 max-w-[46ch] text-[14.5px] text-muted">
                     Incluye acceso al <b className="text-ink">curso de 16 semanas</b> con <b className="text-ink">Zoom en vivo cada 15 días</b>.
                   </p>
-                  <div className="mx-auto mt-6 max-w-[420px]">
+                  <div className="mx-auto mt-6 max-w-[480px]">
                     <PayPalCheckout lead={{ name: lead.name, email: lead.email, church: lead.church }} />
                   </div>
                 </div>
@@ -764,7 +764,7 @@ function PayPalCheckout({
     <div>
       {/* Fondo blanco: el formulario de tarjeta de PayPal usa texto gris oscuro
          (aviso legal, "dirección de facturación", etc.) pensado para fondo claro. */}
-      <div className="rounded-2xl bg-white p-3 sm:p-4">
+      <div className="rounded-2xl bg-white p-2.5 sm:p-4">
         {/* PayPal a veces colapsa el botón de tarjeta a solo el ícono cuando el
            ancho es reducido (p.ej. navegador de Instagram). Esta etiqueta deja
            claro que el botón negro también sirve para pagar con tarjeta. */}
