@@ -59,7 +59,8 @@ export async function POST(req: Request) {
   }
 
   const notify = process.env.LEAD_NOTIFY_EMAIL;
-  const bookingUrl = process.env.NEXT_PUBLIC_BOOKING_URL || "https://iglesiadigital.net/";
+  // Botón "Agendar mi asesoría gratuita" del reporte → agenda de Zoom (Calendly).
+  const bookingUrl = "https://calendly.com/tecnoiglesianetwork/onboarding-curso-ede";
 
   try {
     // 1) Reporte al prospecto
