@@ -378,7 +378,7 @@ export function AuditQuiz() {
               <div className="mt-6 overflow-hidden rounded-[18px] border border-line2 bg-panel2 p-4 sm:p-7">
                 {/* VSL */}
                 <div className="text-center">
-                  <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">Antes de inscribirte, mira esto</div>
+                  <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">Antes de continuar, mira esto</div>
                   <h3 className="mt-1.5 font-display text-[22px] font-bold">Así ayudamos a iglesias como la tuya</h3>
                 </div>
                 <div className="mt-5 -mx-4 sm:mx-0">
