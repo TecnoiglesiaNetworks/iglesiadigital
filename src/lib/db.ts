@@ -44,6 +44,15 @@ function init(): Database.Database {
       hash       TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS email_log (
+      id       INTEGER PRIMARY KEY AUTOINCREMENT,
+      lead_id  INTEGER NOT NULL,
+      step     INTEGER NOT NULL,
+      subject  TEXT,
+      sent_at  TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_email_log_lead ON email_log(lead_id);
   `);
 
   // Migración: columnas de pago (para bases creadas antes de esta versión).
@@ -62,6 +71,10 @@ function init(): Database.Database {
   if (!has("paid_at")) addColumn("ALTER TABLE leads ADD COLUMN paid_at TEXT");
   if (!has("paid_amount")) addColumn("ALTER TABLE leads ADD COLUMN paid_amount TEXT");
   if (!has("paypal_order_id")) addColumn("ALTER TABLE leads ADD COLUMN paypal_order_id TEXT");
+  // Secuencia de emails para leads no pagados.
+  if (!has("seq_status")) addColumn("ALTER TABLE leads ADD COLUMN seq_status TEXT NOT NULL DEFAULT ''");
+  if (!has("seq_step")) addColumn("ALTER TABLE leads ADD COLUMN seq_step INTEGER NOT NULL DEFAULT 0");
+  if (!has("seq_next_at")) addColumn("ALTER TABLE leads ADD COLUMN seq_next_at TEXT");
 
   return db;
 }
@@ -92,6 +105,9 @@ export type LeadRow = {
   paid_at: string | null;
   paid_amount: string | null;
   paypal_order_id: string | null;
+  seq_status: string;
+  seq_step: number;
+  seq_next_at: string | null;
 };
 
 export type LeadInput = {
@@ -247,9 +263,11 @@ export function markPaidByEmail(
       ? `${info.amount} ${info.currency}`
       : info.amount ?? null;
   const nextStatus = lead.status === "perdido" ? lead.status : "ganado";
+  // Al pagar detenemos la secuencia de emails (ya no tiene sentido seguir).
   db.prepare(
     `UPDATE leads SET paid = 1, paid_at = @paid_at, paid_amount = @amount,
-       paypal_order_id = @order, status = @status, updated_at = @now WHERE id = @id`
+       paypal_order_id = @order, status = @status, seq_status = 'stopped',
+       seq_next_at = NULL, updated_at = @now WHERE id = @id`
   ).run({
     id: lead.id,
     paid_at: now,
@@ -259,4 +277,61 @@ export function markPaidByEmail(
     now,
   });
   return getLead(lead.id) as LeadRow;
+}
+
+// ── Secuencia de emails ───────────────────────────────────────────────────────
+
+// Inscribe al lead en la secuencia (si no ha pagado y no está ya activo/terminado).
+export function enrollLeadInSequence(leadId: number, firstAt: string): void {
+  const lead = getLead(leadId);
+  if (!lead || lead.paid) return;
+  if (lead.seq_status === "active" || lead.seq_status === "done") return;
+  db.prepare(
+    "UPDATE leads SET seq_status='active', seq_step=0, seq_next_at=@at, updated_at=@now WHERE id=@id"
+  ).run({ id: leadId, at: firstAt, now: new Date().toISOString() });
+}
+
+// Actualiza el estado de la secuencia de un lead (status / paso / próximo envío).
+export function setSequence(
+  leadId: number,
+  fields: { status?: string; step?: number; next_at?: string | null }
+): LeadRow | undefined {
+  const sets: string[] = [];
+  const params: Record<string, unknown> = { id: leadId, now: new Date().toISOString() };
+  if (fields.status !== undefined) { sets.push("seq_status=@status"); params.status = fields.status; }
+  if (fields.step !== undefined) { sets.push("seq_step=@step"); params.step = fields.step; }
+  if (fields.next_at !== undefined) { sets.push("seq_next_at=@next_at"); params.next_at = fields.next_at; }
+  if (sets.length === 0) return getLead(leadId);
+  db.prepare(`UPDATE leads SET ${sets.join(", ")}, updated_at=@now WHERE id=@id`).run(params);
+  return getLead(leadId);
+}
+
+// Registra un correo enviado (para el historial en el panel).
+export function logSequenceEmail(leadId: number, step: number, subject: string): void {
+  db.prepare("INSERT INTO email_log (lead_id, step, subject, sent_at) VALUES (?,?,?,?)").run(
+    leadId,
+    step,
+    subject,
+    new Date().toISOString()
+  );
+}
+
+// Leads a los que ya les toca el siguiente correo de la secuencia.
+export function dueSequenceLeads(nowIso: string): LeadRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM leads
+       WHERE seq_status='active' AND paid=0 AND seq_next_at IS NOT NULL AND seq_next_at <= ?
+       ORDER BY seq_next_at ASC LIMIT 50`
+    )
+    .all(nowIso) as LeadRow[];
+}
+
+// Historial de correos enviados a un lead.
+export function getEmailLog(
+  leadId: number
+): { step: number; subject: string | null; sent_at: string }[] {
+  return db
+    .prepare("SELECT step, subject, sent_at FROM email_log WHERE lead_id=? ORDER BY sent_at ASC")
+    .all(leadId) as { step: number; subject: string | null; sent_at: string }[];
 }

@@ -59,4 +59,7 @@ export type Lead = {
   paid_at: string | null;
   paid_amount: string | null;
   paypal_order_id: string | null;
+  seq_status: string;
+  seq_step: number;
+  seq_next_at: string | null;
 };

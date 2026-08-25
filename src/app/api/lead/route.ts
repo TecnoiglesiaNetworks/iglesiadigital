@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSendgrid } from "@/lib/sendgrid";
 import { reportEmail, notifyEmail } from "@/emails/report-template";
 import { computeResult, type Answers, type Result } from "@/components/quiz/scoring";
-import { upsertLead } from "@/lib/db";
+import { upsertLead, enrollLeadInSequence } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   // Guardamos el lead en la base de datos (para el panel/CRM). No debe romper la
   // experiencia si algo falla aquí, así que va en su propio try.
   try {
-    upsertLead({
+    const saved = upsertLead({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       church,
@@ -50,6 +50,10 @@ export async function POST(req: Request) {
       result,
       source: "quiz",
     });
+    // Inscribe al lead en la secuencia de emails. El primer correo sale ~2 h
+    // después (para no encimarse con el correo del diagnóstico). Si luego paga,
+    // la secuencia se detiene sola.
+    enrollLeadInSequence(saved.id, new Date(Date.now() + 2 * 3600_000).toISOString());
   } catch (dbErr) {
     console.error("No se pudo guardar el lead en la base:", dbErr);
   }
