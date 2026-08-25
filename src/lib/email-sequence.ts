@@ -149,6 +149,38 @@ export function afterHoursFor(step: number): number {
   return SEQUENCE[step]?.afterHours ?? 24;
 }
 
+// Lead de ejemplo para las vistas previas del admin.
+const SAMPLE = {
+  name: "Pastor Juan Pérez",
+  church: "Iglesia Vida Nueva",
+  email: "pastor@iglesiaejemplo.com",
+} as LeadRow;
+
+function whenLabel(cumHours: number): string {
+  if (cumHours <= 0) return "Al momento (~2 h después del quiz)";
+  const days = Math.round(cumHours / 24);
+  return `Día ${days}`;
+}
+
+// Datos de cada correo para mostrarlos en el panel (número, cuándo, asunto y HTML).
+export function previewSteps(): {
+  n: number;
+  whenLabel: string;
+  subject: string;
+  html: string;
+}[] {
+  let cum = 0;
+  return SEQUENCE.map((s, i) => {
+    cum += s.afterHours;
+    return {
+      n: i + 1,
+      whenLabel: whenLabel(cum),
+      subject: s.subject(SAMPLE),
+      html: shell(s.body(SAMPLE)),
+    };
+  });
+}
+
 // ── Procesador ────────────────────────────────────────────────────────────────
 // Envía los correos que ya tocan. Se llama desde un temporizador interno y/o
 // desde el endpoint /api/cron/email-sequence.

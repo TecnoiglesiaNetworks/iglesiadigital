@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGroup, motion } from "framer-motion";
 import {
-  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook,
+  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGES, STAGE_LABEL, TEMP_CLASS, type Lead, type StageId } from "./stages";
@@ -11,6 +11,7 @@ import { LeadDrawer } from "./LeadDrawer";
 import { AddLeadModal } from "./AddLeadModal";
 import { UsersModal } from "./UsersModal";
 import { IntegrationsModal } from "./IntegrationsModal";
+import { EmailsModal } from "./EmailsModal";
 
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
@@ -33,6 +34,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const [addOpen, setAddOpen] = useState(false);
   const [usersOpen, setUsersOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [emailsOpen, setEmailsOpen] = useState(false);
   const [dragId, setDragId] = useState<number | null>(null);
   const [overStage, setOverStage] = useState<StageId | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -177,6 +179,13 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
             <BarChart3 size={15} /> Reportes
           </a>
           <button
+            onClick={() => setEmailsOpen(true)}
+            title="Secuencia de emails"
+            className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+          >
+            <Mail size={16} />
+          </button>
+          <button
             onClick={() => setIntegrationsOpen(true)}
             title="Integración Calendly (webhook)"
             className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
@@ -318,6 +327,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
       {addOpen && <AddLeadModal onClose={() => setAddOpen(false)} onCreated={refresh} />}
       {usersOpen && <UsersModal onClose={() => setUsersOpen(false)} />}
       {integrationsOpen && <IntegrationsModal onClose={() => setIntegrationsOpen(false)} />}
+      {emailsOpen && <EmailsModal onClose={() => setEmailsOpen(false)} />}
     </div>
   );
 }

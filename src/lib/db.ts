@@ -335,3 +335,38 @@ export function getEmailLog(
     .prepare("SELECT step, subject, sent_at FROM email_log WHERE lead_id=? ORDER BY sent_at ASC")
     .all(leadId) as { step: number; subject: string | null; sent_at: string }[];
 }
+
+// Estadísticas globales de la secuencia (para la vista general del admin).
+export function sequenceStats(): {
+  active: number;
+  paused: number;
+  done: number;
+  stopped: number;
+  sentByStep: Record<number, number>;
+  totalSent: number;
+} {
+  const rows = db
+    .prepare("SELECT seq_status AS s, COUNT(*) AS c FROM leads WHERE seq_status != '' GROUP BY seq_status")
+    .all() as { s: string; c: number }[];
+  const counts: Record<string, number> = {};
+  for (const r of rows) counts[r.s] = r.c;
+
+  const steps = db
+    .prepare("SELECT step, COUNT(*) AS c FROM email_log GROUP BY step")
+    .all() as { step: number; c: number }[];
+  const sentByStep: Record<number, number> = {};
+  let totalSent = 0;
+  for (const s of steps) {
+    sentByStep[s.step] = s.c;
+    totalSent += s.c;
+  }
+
+  return {
+    active: counts["active"] || 0,
+    paused: counts["paused"] || 0,
+    done: counts["done"] || 0,
+    stopped: counts["stopped"] || 0,
+    sentByStep,
+    totalSent,
+  };
+}
