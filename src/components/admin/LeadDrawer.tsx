@@ -2,8 +2,16 @@
 import { useEffect, useState } from "react";
 import {
   X, Mail, Phone, MapPin, Church, CalendarClock, Trash2, Save, ExternalLink,
+  Send, Pause, Play, RotateCcw, Ban, Clock,
 } from "lucide-react";
 import { STAGES, TEMPS, type Lead } from "./stages";
+
+const SEQ_LABEL: Record<string, string> = {
+  active: "En secuencia",
+  paused: "Pausada",
+  done: "Secuencia completada",
+  stopped: "Detenida",
+};
 
 function fmtDateTime(iso?: string | null) {
   if (!iso) return "—";
@@ -27,16 +35,46 @@ export function LeadDrawer({
   onClose,
   onPatch,
   onDelete,
+  onSequence,
 }: {
   lead: Lead;
   onClose: () => void;
   onPatch: (id: number, fields: Record<string, unknown>) => void;
   onDelete: (id: number) => void;
+  onSequence: (id: number, action: string) => Promise<any>;
 }) {
   const [notes, setNotes] = useState(lead.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [log, setLog] = useState<{ step: number; subject: string | null; sent_at: string }[]>([]);
+  const [seqTotal, setSeqTotal] = useState(6);
+  const [seqBusy, setSeqBusy] = useState(false);
 
   useEffect(() => setNotes(lead.notes || ""), [lead.id, lead.notes]);
+
+  // Carga el historial de correos de la secuencia al abrir/cambiar de lead.
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/admin/leads/${lead.id}/sequence`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (alive && d?.ok) {
+          setLog(d.log || []);
+          if (d.total) setSeqTotal(d.total);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [lead.id]);
+
+  async function seqAction(action: string) {
+    setSeqBusy(true);
+    const res = await onSequence(lead.id, action);
+    if (res?.log) setLog(res.log);
+    if (res?.total) setSeqTotal(res.total);
+    setSeqBusy(false);
+  }
 
   const result: QuizResult | null = lead.result ? safeParse(lead.result) : null;
   const answers: QuizAnswers | null = lead.answers ? safeParse(lead.answers) : null;
@@ -129,6 +167,97 @@ export function LeadDrawer({
               </p>
             </div>
           ) : null}
+
+          {/* Secuencia de emails (solo si no ha pagado) */}
+          {!lead.paid && (
+            <div className="rounded-xl border border-slate-200 p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <Send size={15} /> Secuencia de emails
+                </span>
+                <span
+                  className={
+                    "rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold " +
+                    (lead.seq_status === "active"
+                      ? "bg-green-100 text-green-700"
+                      : lead.seq_status === "paused"
+                      ? "bg-amber-100 text-amber-700"
+                      : lead.seq_status === "done"
+                      ? "bg-violet-100 text-violet-700"
+                      : "bg-slate-100 text-slate-500")
+                  }
+                >
+                  {SEQ_LABEL[lead.seq_status] || "Sin secuencia"}
+                </span>
+              </div>
+
+              <p className="flex items-center gap-1.5 text-[13px] text-slate-500">
+                <Clock size={13} />
+                {lead.seq_status === "active"
+                  ? `Próximo: correo ${Math.min(lead.seq_step + 1, seqTotal)} de ${seqTotal}${
+                      lead.seq_next_at ? ` · ${fmtDateTime(lead.seq_next_at)}` : ""
+                    }`
+                  : lead.seq_status === "paused"
+                  ? `Pausada en el correo ${Math.min(lead.seq_step + 1, seqTotal)} de ${seqTotal}.`
+                  : lead.seq_status === "done"
+                  ? `Se enviaron los ${seqTotal} correos.`
+                  : lead.seq_status === "stopped"
+                  ? "Secuencia detenida."
+                  : "Este lead no está en la secuencia."}
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {lead.seq_status === "active" && (
+                  <>
+                    <SeqBtn onClick={() => seqAction("send-now")} disabled={seqBusy} icon={<Send size={13} />}>
+                      Enviar siguiente ahora
+                    </SeqBtn>
+                    <SeqBtn onClick={() => seqAction("pause")} disabled={seqBusy} icon={<Pause size={13} />}>
+                      Pausar
+                    </SeqBtn>
+                    <SeqBtn onClick={() => seqAction("stop")} disabled={seqBusy} icon={<Ban size={13} />} danger>
+                      Detener
+                    </SeqBtn>
+                  </>
+                )}
+                {lead.seq_status === "paused" && (
+                  <>
+                    <SeqBtn onClick={() => seqAction("resume")} disabled={seqBusy} icon={<Play size={13} />}>
+                      Reanudar
+                    </SeqBtn>
+                    <SeqBtn onClick={() => seqAction("stop")} disabled={seqBusy} icon={<Ban size={13} />} danger>
+                      Detener
+                    </SeqBtn>
+                  </>
+                )}
+                {(lead.seq_status === "done" || lead.seq_status === "stopped") && (
+                  <SeqBtn onClick={() => seqAction("restart")} disabled={seqBusy} icon={<RotateCcw size={13} />}>
+                    Reiniciar secuencia
+                  </SeqBtn>
+                )}
+                {!lead.seq_status && (
+                  <SeqBtn onClick={() => seqAction("restart")} disabled={seqBusy} icon={<Play size={13} />}>
+                    Iniciar secuencia
+                  </SeqBtn>
+                )}
+              </div>
+
+              {log.length > 0 && (
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Correos enviados
+                  </span>
+                  <ul className="mt-1.5 space-y-1">
+                    {log.map((e, i) => (
+                      <li key={i} className="text-[12.5px] text-slate-600">
+                        <span className="text-slate-400">{fmtDateTime(e.sent_at)}</span> — {e.subject}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Cita de Calendly */}
           {lead.scheduled_at && (
@@ -229,6 +358,36 @@ export function LeadDrawer({
         </div>
       </aside>
     </>
+  );
+}
+
+function SeqBtn({
+  onClick,
+  disabled,
+  icon,
+  danger,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  icon: React.ReactNode;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={
+        "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12.5px] font-medium transition-colors disabled:opacity-50 " +
+        (danger
+          ? "border-red-200 text-red-600 hover:bg-red-50"
+          : "border-slate-300 text-slate-700 hover:bg-slate-50")
+      }
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
 

@@ -91,6 +91,21 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
     await fetch(`/api/admin/leads/${id}`, { method: "DELETE" });
   }
 
+  // Controla la secuencia de emails de un lead (pausar, reanudar, detener, etc.).
+  async function sequenceAction(id: number, action: string) {
+    const res = await fetch(`/api/admin/leads/${id}/sequence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (json?.ok && json.lead) {
+      setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, ...json.lead } : l)));
+      setSelected((s) => (s && s.id === id ? { ...s, ...json.lead } : s));
+    }
+    return json;
+  }
+
   async function syncCalendly() {
     setSyncing(true);
     setSyncMsg("");
@@ -298,7 +313,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
       )}
 
       {selected && (
-        <LeadDrawer lead={selected} onClose={() => setSelected(null)} onPatch={patchLead} onDelete={removeLead} />
+        <LeadDrawer lead={selected} onClose={() => setSelected(null)} onPatch={patchLead} onDelete={removeLead} onSequence={sequenceAction} />
       )}
       {addOpen && <AddLeadModal onClose={() => setAddOpen(false)} onCreated={refresh} />}
       {usersOpen && <UsersModal onClose={() => setUsersOpen(false)} />}
@@ -362,6 +377,8 @@ function LeadCard({
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {lead.paid ? (
           <span className="rounded-md bg-green-100 px-1.5 py-0.5 text-[11px] font-semibold text-green-700">✓ pagado</span>
+        ) : lead.seq_status === "active" ? (
+          <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-600">✉ secuencia</span>
         ) : null}
         <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${TEMP_CLASS[lead.temperature] || "bg-slate-300 text-white"}`}>
           {lead.temperature === "frio" ? "frío" : lead.temperature}
