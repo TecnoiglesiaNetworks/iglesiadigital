@@ -61,19 +61,28 @@ GET/POST  /api/cron/email-sequence?key=<CRON_SECRET>
 
 Configúralo para que se llame **cada 15 minutos**. Dos opciones:
 
-### Opción A — Coolify Scheduled Task (recomendada)
+### Opción A — Coolify Scheduled Task
 Coolify → la aplicación → **Scheduled Tasks** → New:
-- **Command:** `curl -fsS "http://localhost:3000/api/cron/email-sequence?key=EL_MISMO_CRON_SECRET"`
+- **Command:** `curl -fsS "https://iglesiadigital.net/api/cron/email-sequence?key=EL_MISMO_CRON_SECRET"`
 - **Frequency (cron):** `*/15 * * * *`
 
-(La imagen ya incluye `curl`. Corre dentro del contenedor, por eso `localhost:3000`.)
+> ⚠️ Usa la **URL pública** (no `localhost:3000`). Las Scheduled Tasks de Coolify pueden
+> correr en un contenedor donde la app no escucha en localhost, y el curl fallaría.
 
-### Opción B — Cron externo
-Un servicio como https://cron-job.org apuntando a:
+### Opción B — Cron externo (más confiable)
+Un servicio como https://cron-job.org o https://console.cron-job.org apuntando a:
 ```
 https://iglesiadigital.net/api/cron/email-sequence?key=EL_MISMO_CRON_SECRET
 ```
-cada 15 minutos.
+cada 15 minutos. (Método independiente de Coolify; suele ser el más estable.)
+
+### Verificación rápida del cron (hazlo a mano una vez)
+Ejecuta en cualquier terminal (con la key real):
+```
+curl "https://iglesiadigital.net/api/cron/email-sequence?key=EL_CRON_SECRET"
+```
+Debe responder `{"ok":true,"sent":N,"errors":0}`. Si `sent` es mayor a 0, mandó los correos
+que estaban pendientes → el endpoint funciona y solo faltaba que algo lo llamara cada 15 min.
 
 Respuesta esperada del endpoint: `{"ok":true,"sent":N,"errors":0}`.
 
