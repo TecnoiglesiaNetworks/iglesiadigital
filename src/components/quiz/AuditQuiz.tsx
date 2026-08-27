@@ -8,6 +8,7 @@ import { Combobox, type ComboOption } from "./Combobox";
 import { loadCountries, type CountryOpt } from "./geo";
 import { PayPalCheckout } from "@/components/offer/PayPalCheckout";
 import { CountdownOffer } from "@/components/offer/CountdownOffer";
+import { ChatwootWidget } from "@/components/ChatwootWidget";
 import { OFFER_PRICE, OFFER_PRICE_OLD, OFFER_CURRENCY, OFFER_PRODUCT } from "@/components/offer/config";
 import { cn } from "@/lib/utils";
 
@@ -315,6 +316,8 @@ export function AuditQuiz() {
 
           {screen === "results" && result && (
             <motion.div key="results" {...fade}>
+              {/* Chat de soporte solo en resultados (no durante el quiz). */}
+              <ChatwootWidget />
               <a href="/" className="mb-6 flex justify-center" aria-label="Ir al inicio">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/logos/iglesiadigital-logo.png" alt="Iglesia Digital" className="h-[47px] w-auto" />

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { ChatwootSiteWidget } from "@/components/ChatwootWidget";
 import { SITE, KEYWORDS } from "@/lib/site";
 import { siteGraph } from "@/lib/structured-data";
 
@@ -62,7 +63,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <JsonLd data={siteGraph()} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ChatwootSiteWidget />
+      </body>
     </html>
   );
 }
