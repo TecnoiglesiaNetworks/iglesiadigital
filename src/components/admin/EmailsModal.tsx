@@ -28,6 +28,8 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
   const [editing, setEditing] = useState<number | null>(null);
   const [form, setForm] = useState({ subject: "", body: "" });
   const [saving, setSaving] = useState(false);
+  const [enrollable, setEnrollable] = useState(0);
+  const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -37,12 +39,37 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
         if (!alive || !d?.ok) return;
         setSteps(d.steps || []);
         setStats(d.stats || null);
+        setEnrollable(d.enrollable || 0);
       })
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
   }, []);
+
+  async function enrollAll() {
+    if (
+      !confirm(
+        `Vas a inscribir ${enrollable} lead(s) no pagados en la secuencia. Empezarán a recibir los correos (uno por lead cada ~15 min). ¿Continuar?`
+      )
+    )
+      return;
+    setEnrolling(true);
+    const res = await fetch("/api/admin/sequence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "enroll-all" }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setEnrolling(false);
+    if (d?.ok) {
+      setStats(d.stats || stats);
+      setEnrollable(d.enrollable || 0);
+      alert(`Listo: ${d.enrolled} lead(s) inscritos. Empezarán a recibir la secuencia.`);
+    } else {
+      alert(d?.error || "No se pudo inscribir");
+    }
+  }
 
   function startEdit(s: Step) {
     setEditing(s.n);
@@ -105,6 +132,23 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
                 Estos son los correos que reciben los leads que no pagan. Puedes editar cada texto y
                 ver la vista previa.
               </p>
+
+              {enrollable > 0 && (
+                <div className="mb-4 flex flex-col gap-2 rounded-xl border border-violet-200 bg-violet-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-[13px] text-violet-900">
+                    <b>{enrollable} lead(s)</b> no pagados aún no están en la secuencia (entraron
+                    antes). Inscríbelos para que empiecen a recibir el seguimiento.
+                  </div>
+                  <button
+                    onClick={enrollAll}
+                    disabled={enrolling}
+                    className="inline-flex flex-none items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                  >
+                    {enrolling ? <Loader2 size={15} className="animate-spin" /> : null}
+                    Inscribir a los {enrollable}
+                  </button>
+                </div>
+              )}
 
               <div className="space-y-3">
                 {steps.map((s) => {

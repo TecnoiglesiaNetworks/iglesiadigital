@@ -16,8 +16,15 @@ async function run(req: Request) {
       return NextResponse.json({ ok: false, error: "no autorizado" }, { status: 401 });
     }
   }
-  const res = await processSequence();
-  return NextResponse.json({ ok: true, ...res });
+  try {
+    const res = await processSequence();
+    return NextResponse.json({ ok: true, ...res });
+  } catch (e: any) {
+    // Siempre respondemos JSON chico (evita páginas de error grandes que el
+    // servicio de cron marca como "salida demasiado grande").
+    console.error("[cron] error procesando la secuencia:", e);
+    return NextResponse.json({ ok: false, error: e?.message || "error" }, { status: 200 });
+  }
 }
 
 export async function GET(req: Request) {

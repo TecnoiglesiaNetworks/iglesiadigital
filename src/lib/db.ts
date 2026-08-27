@@ -324,14 +324,37 @@ export function logSequenceEmail(leadId: number, step: number, subject: string):
 }
 
 // Leads a los que ya les toca el siguiente correo de la secuencia.
+// Límite por corrida (20) para no exceder el timeout del servicio de cron cuando
+// hay muchos pendientes; el resto sale en la siguiente corrida (cada 15 min).
 export function dueSequenceLeads(nowIso: string): LeadRow[] {
   return db
     .prepare(
       `SELECT * FROM leads
        WHERE seq_status='active' AND paid=0 AND seq_next_at IS NOT NULL AND seq_next_at <= ?
-       ORDER BY seq_next_at ASC LIMIT 50`
+       ORDER BY seq_next_at ASC LIMIT 20`
     )
     .all(nowIso) as LeadRow[];
+}
+
+// Cuántos leads no pagados se pueden inscribir (nunca inscritos o detenidos).
+export function countEnrollableLeads(): number {
+  const r = db
+    .prepare("SELECT COUNT(*) AS c FROM leads WHERE paid=0 AND (seq_status='' OR seq_status='stopped')")
+    .get() as { c: number };
+  return r.c;
+}
+
+// Inscribe en la secuencia a todos los leads no pagados que no estén ya activos.
+// Devuelve cuántos se inscribieron. El primer correo sale en la próxima corrida.
+export function enrollAllUnpaid(firstAt: string): number {
+  const now = new Date().toISOString();
+  const info = db
+    .prepare(
+      `UPDATE leads SET seq_status='active', seq_step=0, seq_next_at=@at, updated_at=@now
+       WHERE paid=0 AND (seq_status='' OR seq_status='stopped')`
+    )
+    .run({ at: firstAt, now });
+  return info.changes;
 }
 
 // Historial de correos enviados a un lead.
