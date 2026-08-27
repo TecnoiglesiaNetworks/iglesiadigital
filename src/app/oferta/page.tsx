@@ -65,7 +65,7 @@ export default function OfertaPage({
                   ${OFFER_PRICE} {OFFER_CURRENCY}
                 </span>
               </div>
-              <div className="mx-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-good/15 px-3.5 py-1 text-[13.5px] font-bold text-good">
+              <div className="mx-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-good/15 px-3.5 py-1 text-[13.5px] font-bold text-white">
                 ✔ Un solo pago de ${OFFER_PRICE} {OFFER_CURRENCY} · No es mensual
               </div>
               <p className="mx-auto mt-2 max-w-[42ch] text-[14px] text-muted">

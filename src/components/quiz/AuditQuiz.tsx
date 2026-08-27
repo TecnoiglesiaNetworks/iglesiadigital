@@ -401,7 +401,7 @@ export function AuditQuiz() {
                       ${OFFER_PRICE} {OFFER_CURRENCY}
                     </span>
                   </div>
-                  <div className="mx-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-good/15 px-3.5 py-1 text-[13.5px] font-bold text-good">
+                  <div className="mx-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-good/15 px-3.5 py-1 text-[13.5px] font-bold text-white">
                     ✔ Un solo pago de ${OFFER_PRICE} {OFFER_CURRENCY} · No es mensual
                   </div>
                   <p className="mx-auto mt-3 max-w-[46ch] text-[14.5px] text-white/90">
