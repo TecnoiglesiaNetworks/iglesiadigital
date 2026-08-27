@@ -11,7 +11,9 @@ export function reportEmail(
   unsubscribeUrl?: string
 ) {
   const first = lead.name?.split(" ")[0] || "Hola";
-  const postal = process.env.LEAD_POSTAL_ADDRESS || "Tecnoiglesia Network";
+  const postal =
+    process.env.LEAD_POSTAL_ADDRESS ||
+    "Agua Azul #903 Int. Ab81, Col. Jardines del Moral, CP 37160, León, Guanajuato, México";
   const bars = result.dims
     .map(
       (d) => `

@@ -12,7 +12,9 @@ import { unsubUrl } from "./unsubscribe";
 const BASE = process.env.PUBLIC_BASE_URL || "https://iglesiadigital.net";
 const ZOOM_URL = "https://calendly.com/tecnoiglesianetwork/onboarding-curso-ede";
 // Dirección física del remitente (requisito legal de correos comerciales).
-const POSTAL = process.env.LEAD_POSTAL_ADDRESS || "Tecnoiglesia Network";
+const POSTAL =
+  process.env.LEAD_POSTAL_ADDRESS ||
+  "Agua Azul #903 Int. Ab81, Col. Jardines del Moral, CP 37160, León, Guanajuato, México";
 
 function first(l: LeadRow) {
   return (l.name || "").split(" ")[0] || "Hola";
