@@ -58,7 +58,9 @@ export async function POST(req: Request) {
     console.error("No se pudo guardar el lead en la base:", dbErr);
   }
 
-  const notify = process.env.LEAD_NOTIFY_EMAIL;
+  // Aviso de cada lead nuevo. Fijado en código (ignora LEAD_NOTIFY_EMAIL de Coolify)
+  // para que llegue siempre a este correo.
+  const notify = "pedro@tecnoiglesia.com";
   // Botón "Agendar mi asesoría gratuita" del reporte → agenda de Zoom (Calendly).
   const bookingUrl = "https://calendly.com/tecnoiglesianetwork/onboarding-curso-ede";
   // Botón secundario → oferta directa (con los datos del lead para ligar el pago).
