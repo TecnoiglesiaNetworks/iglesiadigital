@@ -16,11 +16,11 @@ const INCLUDES = [
 export function ProgramDetails({ className = "" }: { className?: string }) {
   return (
     <div className={`rounded-[16px] border border-line2 bg-white/[0.03] p-5 sm:p-6 ${className}`}>
-      <h3 className="font-display text-[20px] font-bold">¿Qué es el Programa Iglesia Digital?</h3>
-      <p className="mt-2 text-[14.5px] text-muted">
-        Es un <b className="text-ink">curso en video</b> que avanzas a tu ritmo,{" "}
-        <b className="text-ink">semana a semana durante 16 semanas</b>, con{" "}
-        <b className="text-ink">sesiones en vivo por Zoom cada 15 días</b> para resolver tus dudas y
+      <h3 className="font-display text-[20px] font-bold text-white">¿Qué es el Programa Iglesia Digital?</h3>
+      <p className="mt-2 text-[14.5px] text-white/90">
+        Es un <b className="text-white">curso en video</b> que avanzas a tu ritmo,{" "}
+        <b className="text-white">semana a semana durante 16 semanas</b>, con{" "}
+        <b className="text-white">sesiones en vivo por Zoom cada 15 días</b> para resolver tus dudas y
         acompañarte paso a paso hasta ver resultados.
       </p>
 
@@ -38,7 +38,7 @@ export function ProgramDetails({ className = "" }: { className?: string }) {
       </div>
       <ul className="mt-2.5 space-y-2.5">
         {INCLUDES.map((item) => (
-          <li key={item} className="flex items-start gap-2.5 text-[14.5px]">
+          <li key={item} className="flex items-start gap-2.5 text-[14.5px] text-white/90">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-none text-good" aria-hidden>
               <path d="M20 6 9 17l-5-5" />
             </svg>
@@ -47,11 +47,14 @@ export function ProgramDetails({ className = "" }: { className?: string }) {
         ))}
       </ul>
 
-      {/* Llamado a la acción con flechas hacia el precio */}
+      {/* Botón que baja al checkout, con flechas */}
       <div className="mt-6 text-center">
-        <div className="inline-block rounded-full border border-accent/50 bg-accent/10 px-5 py-2.5 font-display text-[15px] font-extrabold uppercase tracking-wide text-accent">
+        <a
+          href="#checkout"
+          className="inline-block rounded-full bg-accent px-6 py-3 font-display text-[15px] font-extrabold uppercase tracking-wide text-white shadow-[0_12px_30px_-10px_rgba(255,80,1,0.6)] transition hover:brightness-110"
+        >
           ¡Adquiérelo ahora! · Oferta limitada
-        </div>
+        </a>
         <div className="mt-1.5 flex animate-bounce items-center justify-center gap-1 text-accent">
           {[0, 1, 2].map((i) => (
             <svg key={i} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

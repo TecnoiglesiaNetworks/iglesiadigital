@@ -387,7 +387,7 @@ export function AuditQuiz() {
                 <ProgramDetails className="mt-7 text-left" />
 
                 {/* Oferta especial + pago */}
-                <div className="mt-9 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">
+                <div id="checkout" className="mt-9 scroll-mt-6 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">
                   <CountdownOffer seconds={600} />
                   <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
                     🎉 Precio de aniversario · Solo por poco tiempo
@@ -401,8 +401,11 @@ export function AuditQuiz() {
                       ${OFFER_PRICE} {OFFER_CURRENCY}
                     </span>
                   </div>
-                  <p className="mx-auto mt-3 max-w-[46ch] text-[14.5px] text-muted">
-                    Incluye acceso al <b className="text-ink">curso de 16 semanas</b> con <b className="text-ink">Zoom en vivo cada 15 días</b>.
+                  <div className="mx-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-good/15 px-3.5 py-1 text-[13.5px] font-bold text-good">
+                    ✔ Un solo pago de ${OFFER_PRICE} {OFFER_CURRENCY} · No es mensual
+                  </div>
+                  <p className="mx-auto mt-3 max-w-[46ch] text-[14.5px] text-white/90">
+                    Incluye acceso al <b className="text-white">curso de 16 semanas</b> con <b className="text-white">Zoom en vivo cada 15 días</b>.
                   </p>
                   <div className="mx-auto mt-6 max-w-[480px]">
                     <PayPalCheckout lead={{ name: lead.name, email: lead.email, church: lead.church }} />

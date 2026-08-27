@@ -55,7 +55,7 @@ export default function OfertaPage({
             <ProgramDetails className="my-7 text-left" />
 
             {/* Oferta + pago */}
-            <div className="rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">
+            <div id="checkout" className="scroll-mt-6 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">
               <CountdownOffer seconds={600} />
               <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
                 <span className="whitespace-nowrap text-[22px] font-semibold text-red-500 line-through">
@@ -64,6 +64,9 @@ export default function OfertaPage({
                 <span className="whitespace-nowrap font-display text-[clamp(34px,8vw,44px)] font-extrabold leading-none text-green-400">
                   ${OFFER_PRICE} {OFFER_CURRENCY}
                 </span>
+              </div>
+              <div className="mx-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-good/15 px-3.5 py-1 text-[13.5px] font-bold text-good">
+                ✔ Un solo pago de ${OFFER_PRICE} {OFFER_CURRENCY} · No es mensual
               </div>
               <p className="mx-auto mt-2 max-w-[42ch] text-[14px] text-muted">
                 Precio de lanzamiento por nuestro aniversario. Por poco tiempo.
