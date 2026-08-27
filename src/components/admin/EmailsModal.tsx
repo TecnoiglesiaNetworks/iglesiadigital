@@ -227,7 +227,8 @@ export function EmailsModal({ onClose }: { onClose: () => void }) {
                             <b>Cómo escribir:</b> cada línea es un párrafo · <code>{"{nombre}"}</code> y{" "}
                             <code>{"{iglesia}"}</code> se rellenan solos · <code>**negrita**</code> para resaltar ·
                             una línea con <code>[OFERTA:Texto del botón]</code> pone el botón de pago ·{" "}
-                            <code>[ZOOM:Texto del botón]</code> pone el botón de la llamada.
+                            <code>[ZOOM:Texto del botón]</code> pone el botón de la llamada ·{" "}
+                            <code>[WEB:Texto del enlace]</code> pone un enlace al sitio (chat).
                           </div>
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             <button

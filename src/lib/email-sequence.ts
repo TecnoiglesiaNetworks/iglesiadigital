@@ -53,6 +53,10 @@ function button(text: string, url: string, color = "#FF5001") {
   </div>`;
 }
 
+function webLink(text: string, url: string) {
+  return `<div style="text-align:center;margin:16px 0"><a href="${url}" style="color:#6A3DE8;font-weight:600;text-decoration:underline;font-size:14.5px">${text}</a></div>`;
+}
+
 function renderBodyHtml(text: string, l: LeadRow) {
   const lines = text.split("\n").map((x) => x.trim()).filter(Boolean);
   const parts = lines.map((line) => {
@@ -60,6 +64,8 @@ function renderBodyHtml(text: string, l: LeadRow) {
     if (off) return button(esc(sub(off[1] || "Inscribirme por $97 →", l)), offerUrl(l));
     const zoom = line.match(/^\[ZOOM(?::\s*(.*?))?\]$/i);
     if (zoom) return button(esc(sub(zoom[1] || "Agendar mi llamada por Zoom", l)), ZOOM_URL, "#6A3DE8");
+    const web = line.match(/^\[WEB(?::\s*(.*?))?\]$/i);
+    if (web) return webLink(esc(sub(web[1] || "Escríbenos por el chat del sitio", l)), BASE);
     return `<p style="${pStyle}">${inline(line, l)}</p>`;
   });
   return shell(parts.join(""), unsubUrl(l.email));
@@ -98,9 +104,10 @@ Gracias por tomarte el tiempo de hacer el diagnóstico digital de **{iglesia}**.
 Tu resultado te mostró en qué nivel estás y dónde están tus mayores oportunidades. Pero un diagnóstico, por sí solo, no transforma nada. Lo que transforma es un **plan claro y alguien que te acompañe a ejecutarlo**.
 Para eso existe el **Programa Iglesia Digital**: 16 semanas llevándote de la mano, con **sesiones en vivo por Zoom cada 15 días** donde resolvemos tus dudas y revisamos tu avance. No es un curso que compras y abandonas: es acompañamiento real hasta ver resultados.
 Y algo que quiero que sepas desde hoy: dentro del programa te enseñamos a activar el **Google Ad Grant**, un beneficio de **$10,000 USD mensuales en publicidad gratuita** que Google le da a las iglesias.
-Por nuestro **aniversario**, puedes entrar hoy por **$97 USD** en lugar de $497. Pero es por muy poco tiempo.
-[OFERTA:Inscribirme por $97 →]
-Si te queda alguna duda, responde este correo. Lo leo yo.`,
+Por nuestro **aniversario**, puedes entrar hoy por **$97 USD** en lugar de $497 — es un **solo pago** (no es una mensualidad). Pero es por muy poco tiempo.
+[OFERTA:Inscribirme por $97 (un solo pago) →]
+¿Tienes dudas? Escríbenos por el chat en nuestro sitio y con gusto te ayudamos.
+[WEB:Ir al sitio y abrir el chat]`,
   },
   // 2 · +1 día · storytelling
   {
@@ -114,8 +121,8 @@ Si algo de esto te resuena, quiero que sepas dos cosas: **no es tu culpa** —na
 El Programa Iglesia Digital nació justo para romper ese ciclo. Cada 15 días nos vemos en vivo por Zoom para que avances de verdad, con pasos concretos y herramientas listas para usar.
 Antes de decidir, me encantaría conocerte y escuchar el caso de **{iglesia}** en una llamada corta por Zoom, sin compromiso. En 15 minutos te digo con honestidad si esto es para tu iglesia o no.
 [ZOOM:Agendar mi llamada por Zoom]
-Y si ya quieres avanzar, aquí entras con el precio de aniversario ($97):
-[OFERTA:Inscribirme por $97 →]`,
+Y si ya quieres avanzar, aquí entras con el precio de aniversario ($97, un solo pago):
+[OFERTA:Inscribirme por $97 (un solo pago) →]`,
   },
   // 3 · +2 días · valor / temario
   {
@@ -127,9 +134,10 @@ Quiero que veas exactamente lo que vivirás dentro del **Programa Iglesia Digita
 **Mes 2 — Construcción digital.** Levantas tu sitio web efectivo, configuras la Church Online Platform, ordenas tu streaming y equipo técnico, y haces un simulacro de servicio en vivo.
 **Mes 3 — Tráfico y publicidad.** Aquí activas el **Google Ad Grant: $10,000 USD al mes en anuncios gratis**, usas la herramienta de IA SmartReach Ads y construyes tu embudo para acompañar decisiones espirituales. Este mes, por sí solo, vale muchas veces la inversión.
 **Mes 4 — Lanzamiento y seguimiento.** Planeas y ejecutas tu semana de impacto, organizas los grupos de afirmación para el seguimiento espiritual, y cierras con tu **certificado de culminación**.
-Todo esto, con **sesiones en vivo por Zoom cada 15 días** para que nunca te quedes atorado. Por el aniversario: **$97 USD** en lugar de $497.
-[OFERTA:Quiero inscribirme →]
-¿Prefieres que lo veamos juntos primero? Responde este correo o agenda una llamada por Zoom.`,
+Todo esto, con **sesiones en vivo por Zoom cada 15 días** para que nunca te quedes atorado. Por el aniversario: **$97 USD** (un **solo pago**, no mensual) en lugar de $497.
+[OFERTA:Quiero inscribirme (un solo pago de $97) →]
+¿Prefieres que lo veamos juntos primero? Agenda una llamada por Zoom o escríbenos por el chat de nuestro sitio.
+[WEB:Escríbenos por el chat del sitio]`,
   },
   // 4 · +3 días · Google Grant + Zoom
   {
@@ -139,9 +147,9 @@ Todo esto, con **sesiones en vivo por Zoom cada 15 días** para que nunca te que
 Sé que suena demasiado bueno para ser verdad, así que voy directo: Google tiene un programa (el **Google Ad Grant**) que le regala a las organizaciones sin fines de lucro —**incluidas las iglesias**— hasta **$10,000 USD mensuales** para anunciarse en su buscador.
 Piensa en lo que eso significa para **{iglesia}**: cuando alguien en tu ciudad busque "iglesia cerca de mí", "necesito oración" o "ayuda para mi familia", tu iglesia puede aparecer ahí, día y noche, sin pagar un peso.
 El problema es que configurarlo bien es complicado, y muchas iglesias lo intentan, cometen errores y pierden el beneficio. Por eso, dentro del programa te llevamos **paso a paso** para obtenerlo y aprovecharlo (incluso con nuestra herramienta de IA, SmartReach Ads).
-Solo este módulo puede transformar el alcance de tu iglesia para siempre. Y está incluido en los $97 del precio de aniversario.
+Solo este módulo puede transformar el alcance de tu iglesia para siempre. Y está incluido en los $97 del precio de aniversario, que es un **solo pago** (no una mensualidad).
 [ZOOM:Agendar mi llamada por Zoom]
-[OFERTA:Inscribirme por $97 →]`,
+[OFERTA:Inscribirme por $97 (un solo pago) →]`,
   },
   // 5 · +5 días · urgencia + futuro
   {
@@ -152,19 +160,20 @@ Cierra los ojos un segundo e imagina que estamos a cuatro meses de hoy.
 **{iglesia}** ya tiene un sitio web que sí funciona. Tus transmisiones se ven y se escuchan con excelencia. Tienes un equipo digital organizado que sabe qué hacer cada semana. Y en Google, cuando alguien en tu ciudad busca esperanza, **aparece tu iglesia** —gracias a los $10,000 USD mensuales del Ad Grant que ya activaste.
 Nuevas familias llegando. Personas tomando decisiones. Un ministerio que por fin alcanza a quienes nunca habrían cruzado la puerta por sí solos.
 Eso no es un sueño lejano: es el resultado del camino que recorres en el Programa Iglesia Digital. Pero empieza con una decisión hoy.
-Y te escribo porque **la oferta de aniversario ($97 en vez de $497) está por cerrar**. No quiero que tu iglesia se quede afuera.
-[OFERTA:Asegurar mi lugar por $97 →]
-Si algo te detiene, respóndeme. Lo resolvemos juntos.`,
+Y te escribo porque **la oferta de aniversario ($97, un solo pago, en vez de $497) está por cerrar**. No quiero que tu iglesia se quede afuera.
+[OFERTA:Asegurar mi lugar por $97 (un solo pago) →]
+Si algo te detiene, escríbenos por el chat de nuestro sitio. Lo resolvemos juntos.
+[WEB:Escríbenos por el chat del sitio]`,
   },
   // 6 · +7 días · última llamada
   {
     afterHours: 48,
     subject: "{nombre}, se cierra hoy",
     body: `Hola {nombre},
-Hoy es el último día para entrar al **Programa Iglesia Digital** con el precio de aniversario de **$97 USD**. Mañana vuelve a $497.
+Hoy es el último día para entrar al **Programa Iglesia Digital** con el precio de aniversario de **$97 USD** (un **solo pago**, no mensual). Mañana vuelve a $497.
 Hiciste el diagnóstico por una razón: en tu corazón hay un deseo de que **{iglesia}** crezca y alcance a más personas. Este es el acompañamiento para lograrlo —16 semanas, Zoom en vivo cada 15 días, el Google Ad Grant y tu certificación al final.
 No dejes que el precio de aniversario se te vaya.
-[OFERTA:Entrar ahora por $97 →]
+[OFERTA:Entrar ahora por $97 (un solo pago) →]
 ¿Última duda antes de decidir? Agenda una llamada por Zoom y la vemos.
 [ZOOM:Agendar mi llamada por Zoom]`,
   },
@@ -247,6 +256,7 @@ export async function processSequence(): Promise<{ sent: number; errors: number 
         to: lead.email,
         subject,
         html: renderBodyHtml(tpl.body, lead),
+        replyTo: "contacto@tecnoiglesia.com",
         listUnsubscribe: unsubUrl(lead.email),
       });
       logSequenceEmail(lead.id, i, subject);
