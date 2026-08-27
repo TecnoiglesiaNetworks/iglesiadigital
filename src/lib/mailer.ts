@@ -2,7 +2,14 @@
 // sin dependencias extra. El remitente debe estar en un dominio verificado en
 // Resend (p.ej. iglesiadigital.net o tecnoiglesia.com).
 
-type Mail = { to: string; subject: string; html: string; replyTo?: string };
+type Mail = {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+  // URL de cancelación para el header List-Unsubscribe (un clic, Gmail/Yahoo).
+  listUnsubscribe?: string;
+};
 
 export function mailFrom() {
   const email = process.env.LEAD_FROM_EMAIL || "hola@iglesiadigital.net";
@@ -16,7 +23,7 @@ export function mailerReady() {
   return Boolean(process.env.RESEND_API_KEY);
 }
 
-export async function sendEmail({ to, subject, html, replyTo }: Mail): Promise<void> {
+export async function sendEmail({ to, subject, html, replyTo, listUnsubscribe }: Mail): Promise<void> {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("Falta RESEND_API_KEY en las variables de entorno.");
 
@@ -32,6 +39,14 @@ export async function sendEmail({ to, subject, html, replyTo }: Mail): Promise<v
       subject,
       html,
       ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(listUnsubscribe
+        ? {
+            headers: {
+              "List-Unsubscribe": `<${listUnsubscribe}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
+          }
+        : {}),
     }),
     cache: "no-store",
   });

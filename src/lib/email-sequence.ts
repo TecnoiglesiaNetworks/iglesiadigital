@@ -6,10 +6,13 @@ import {
   getTemplate,
   type LeadRow,
 } from "./db";
+import { unsubUrl } from "./unsubscribe";
 
 // ── Configuración ─────────────────────────────────────────────────────────────
 const BASE = process.env.PUBLIC_BASE_URL || "https://iglesiadigital.net";
 const ZOOM_URL = "https://calendly.com/tecnoiglesianetwork/onboarding-curso-ede";
+// Dirección física del remitente (requisito legal de correos comerciales).
+const POSTAL = process.env.LEAD_POSTAL_ADDRESS || "Tecnoiglesia Network";
 
 function first(l: LeadRow) {
   return (l.name || "").split(" ")[0] || "Hola";
@@ -57,10 +60,10 @@ function renderBodyHtml(text: string, l: LeadRow) {
     if (zoom) return button(esc(sub(zoom[1] || "Agendar mi llamada por Zoom", l)), ZOOM_URL, "#6A3DE8");
     return `<p style="${pStyle}">${inline(line, l)}</p>`;
   });
-  return shell(parts.join(""));
+  return shell(parts.join(""), unsubUrl(l.email));
 }
 
-function shell(inner: string) {
+function shell(inner: string, unsubscribeLink: string) {
   return `<!DOCTYPE html><html><body style="margin:0;background:#f4f5fb;font-family:Arial,Helvetica,sans-serif">
   <div style="max-width:560px;margin:0 auto;padding:24px">
     <div style="background:#150F2E;border-radius:18px 18px 0 0;padding:22px;text-align:center">
@@ -70,8 +73,12 @@ function shell(inner: string) {
       ${inner}
       <p style="color:#334;font-size:15px;margin:24px 0 0">Un abrazo,<br><b>Pedro Abiú</b><br><span style="color:#889">Iglesia Digital</span></p>
     </div>
-    <p style="color:#aab;font-size:11px;text-align:center;margin-top:16px">© Tecnoiglesia Network · Programa Iglesia Digital<br>
-    Recibes este correo porque hiciste el diagnóstico digital de tu iglesia.</p>
+    <p style="color:#aab;font-size:11px;text-align:center;margin-top:16px;line-height:1.7">
+      © Tecnoiglesia Network · Programa Iglesia Digital<br>
+      ${POSTAL}<br>
+      Recibes este correo porque hiciste el diagnóstico digital de tu iglesia.<br>
+      <a href="${unsubscribeLink}" style="color:#889;text-decoration:underline">Cancelar suscripción</a>
+    </p>
   </div></body></html>`;
 }
 
@@ -234,7 +241,12 @@ export async function processSequence(): Promise<{ sent: number; errors: number 
     try {
       const tpl = templateFor(i);
       const subject = sub(tpl.subject, lead);
-      await sendEmail({ to: lead.email, subject, html: renderBodyHtml(tpl.body, lead) });
+      await sendEmail({
+        to: lead.email,
+        subject,
+        html: renderBodyHtml(tpl.body, lead),
+        listUnsubscribe: unsubUrl(lead.email),
+      });
       logSequenceEmail(lead.id, i, subject);
 
       const nextIdx = i + 1;

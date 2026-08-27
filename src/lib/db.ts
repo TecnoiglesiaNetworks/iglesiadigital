@@ -82,6 +82,7 @@ function init(): Database.Database {
   if (!has("seq_status")) addColumn("ALTER TABLE leads ADD COLUMN seq_status TEXT NOT NULL DEFAULT ''");
   if (!has("seq_step")) addColumn("ALTER TABLE leads ADD COLUMN seq_step INTEGER NOT NULL DEFAULT 0");
   if (!has("seq_next_at")) addColumn("ALTER TABLE leads ADD COLUMN seq_next_at TEXT");
+  if (!has("unsubscribed")) addColumn("ALTER TABLE leads ADD COLUMN unsubscribed INTEGER NOT NULL DEFAULT 0");
 
   return db;
 }
@@ -115,6 +116,7 @@ export type LeadRow = {
   seq_status: string;
   seq_step: number;
   seq_next_at: string | null;
+  unsubscribed: number;
 };
 
 export type LeadInput = {
@@ -291,7 +293,7 @@ export function markPaidByEmail(
 // Inscribe al lead en la secuencia (si no ha pagado y no está ya activo/terminado).
 export function enrollLeadInSequence(leadId: number, firstAt: string): void {
   const lead = getLead(leadId);
-  if (!lead || lead.paid) return;
+  if (!lead || lead.paid || lead.unsubscribed) return;
   if (lead.seq_status === "active" || lead.seq_status === "done") return;
   db.prepare(
     "UPDATE leads SET seq_status='active', seq_step=0, seq_next_at=@at, updated_at=@now WHERE id=@id"
@@ -330,16 +332,32 @@ export function dueSequenceLeads(nowIso: string): LeadRow[] {
   return db
     .prepare(
       `SELECT * FROM leads
-       WHERE seq_status='active' AND paid=0 AND seq_next_at IS NOT NULL AND seq_next_at <= ?
+       WHERE seq_status='active' AND paid=0 AND unsubscribed=0
+         AND seq_next_at IS NOT NULL AND seq_next_at <= ?
        ORDER BY seq_next_at ASC LIMIT 20`
     )
     .all(nowIso) as LeadRow[];
 }
 
+// Da de baja (unsubscribe) al lead con ese correo: no recibe más correos y se
+// detiene su secuencia. Devuelve true si existía el lead.
+export function unsubscribeByEmail(email: string): boolean {
+  const norm = email.trim().toLowerCase();
+  const info = db
+    .prepare(
+      `UPDATE leads SET unsubscribed=1, seq_status='stopped', seq_next_at=NULL, updated_at=@now
+       WHERE email=@email`
+    )
+    .run({ email: norm, now: new Date().toISOString() });
+  return info.changes > 0;
+}
+
 // Cuántos leads no pagados se pueden inscribir (nunca inscritos o detenidos).
 export function countEnrollableLeads(): number {
   const r = db
-    .prepare("SELECT COUNT(*) AS c FROM leads WHERE paid=0 AND (seq_status='' OR seq_status='stopped')")
+    .prepare(
+      "SELECT COUNT(*) AS c FROM leads WHERE paid=0 AND unsubscribed=0 AND (seq_status='' OR seq_status='stopped')"
+    )
     .get() as { c: number };
   return r.c;
 }
@@ -351,7 +369,7 @@ export function enrollAllUnpaid(firstAt: string): number {
   const info = db
     .prepare(
       `UPDATE leads SET seq_status='active', seq_step=0, seq_next_at=@at, updated_at=@now
-       WHERE paid=0 AND (seq_status='' OR seq_status='stopped')`
+       WHERE paid=0 AND unsubscribed=0 AND (seq_status='' OR seq_status='stopped')`
     )
     .run({ at: firstAt, now });
   return info.changes;

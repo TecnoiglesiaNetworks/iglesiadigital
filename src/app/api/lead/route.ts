@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/mailer";
+import { unsubUrl } from "@/lib/unsubscribe";
 import { reportEmail, notifyEmail } from "@/emails/report-template";
 import { computeResult, type Answers, type Result } from "@/components/quiz/scoring";
 import { upsertLead, enrollLeadInSequence } from "@/lib/db";
@@ -72,10 +73,12 @@ export async function POST(req: Request) {
 
   try {
     // 1) Reporte al prospecto
+    const unsubscribeUrl = unsubUrl(email.trim().toLowerCase());
     await sendEmail({
       to: email,
       subject: `${name.split(" ")[0]}, tu diagnóstico digital (${result.pct}%) 📊`,
-      html: reportEmail({ name, church, city }, result, bookingUrl, offerUrl),
+      html: reportEmail({ name, church, city }, result, bookingUrl, offerUrl, unsubscribeUrl),
+      listUnsubscribe: unsubscribeUrl,
     });
 
     // 2) Aviso interno al equipo (opcional)

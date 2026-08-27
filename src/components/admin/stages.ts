@@ -62,4 +62,5 @@ export type Lead = {
   seq_status: string;
   seq_step: number;
   seq_next_at: string | null;
+  unsubscribed: number;
 };

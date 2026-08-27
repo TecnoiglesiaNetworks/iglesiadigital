@@ -3,8 +3,15 @@ import type { Result } from "@/components/quiz/scoring";
 type LeadInfo = { name: string; church?: string; city?: string };
 
 /** Correo HTML con el reporte personalizado que recibe el prospecto. */
-export function reportEmail(lead: LeadInfo, result: Result, bookingUrl: string, offerUrl?: string) {
+export function reportEmail(
+  lead: LeadInfo,
+  result: Result,
+  bookingUrl: string,
+  offerUrl?: string,
+  unsubscribeUrl?: string
+) {
   const first = lead.name?.split(" ")[0] || "Hola";
+  const postal = process.env.LEAD_POSTAL_ADDRESS || "Tecnoiglesia Network";
   const bars = result.dims
     .map(
       (d) => `
@@ -63,7 +70,14 @@ export function reportEmail(lead: LeadInfo, result: Result, bookingUrl: string, 
       </div>
       <p style="color:#99a;font-size:12px;text-align:center;margin-top:18px">Este diagnóstico es orientativo, basado en tus respuestas.</p>
     </div>
-    <p style="color:#aab;font-size:11px;text-align:center;margin-top:16px">© Tecnoiglesia Network · Programa Iglesia Digital</p>
+    <p style="color:#aab;font-size:11px;text-align:center;margin-top:16px;line-height:1.7">
+      © Tecnoiglesia Network · Programa Iglesia Digital<br>
+      ${postal}${
+        unsubscribeUrl
+          ? `<br><a href="${unsubscribeUrl}" style="color:#889;text-decoration:underline">Cancelar suscripción</a>`
+          : ""
+      }
+    </p>
   </div></body></html>`;
 }
 
