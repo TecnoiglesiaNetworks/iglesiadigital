@@ -24,7 +24,16 @@ export function ProgramDetails({ className = "" }: { className?: string }) {
         acompañarte paso a paso hasta ver resultados.
       </p>
 
-      <div className="mt-4 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
+      {/* Vista del plan de formación (módulos + bonos + certificado) */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/programa-formacion.png"
+        alt="Plan de Formación Iglesia Digital — Curso en video de 16 semanas, con bonos y certificado"
+        className="mt-5 w-full rounded-xl border border-line2"
+        loading="lazy"
+      />
+
+      <div className="mt-5 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
         Todo lo que incluye
       </div>
       <ul className="mt-2.5 space-y-2.5">
