@@ -9,7 +9,9 @@ export const PAYPAL_BASE =
     ? "https://api-m.sandbox.paypal.com"
     : "https://api-m.paypal.com";
 
-export const PAYPAL_PRICE = process.env.PAYPAL_PRICE || "97.00";
+// ⚠️ PRUEBA TEMPORAL: precio fijo a 1.00 para probar el cobro. REVERTIR a:
+// export const PAYPAL_PRICE = process.env.PAYPAL_PRICE || "97.00";
+export const PAYPAL_PRICE = "1.00";
 export const PAYPAL_CURRENCY = process.env.PAYPAL_CURRENCY || "USD";
 export const PAYPAL_PRODUCT_NAME =
   process.env.PAYPAL_PRODUCT_NAME || "Programa Iglesia Digital";
