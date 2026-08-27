@@ -46,6 +46,20 @@ export function ProgramDetails({ className = "" }: { className?: string }) {
           </li>
         ))}
       </ul>
+
+      {/* Llamado a la acción con flechas hacia el precio */}
+      <div className="mt-6 text-center">
+        <div className="inline-block rounded-full border border-accent/50 bg-accent/10 px-5 py-2.5 font-display text-[15px] font-extrabold uppercase tracking-wide text-accent">
+          ¡Adquiérelo ahora! · Oferta limitada
+        </div>
+        <div className="mt-1.5 flex animate-bounce items-center justify-center gap-1 text-accent">
+          {[0, 1, 2].map((i) => (
+            <svg key={i} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
