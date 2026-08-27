@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuroraBackground } from "@/components/ui/animated-background";
 import { CountdownOffer } from "@/components/offer/CountdownOffer";
 import { PayPalCheckout } from "@/components/offer/PayPalCheckout";
+import { ProgramDetails } from "@/components/offer/ProgramDetails";
 import {
   OFFER_PRICE,
   OFFER_PRICE_OLD,
@@ -15,17 +16,6 @@ export const metadata: Metadata = {
     "Únete al Programa Iglesia Digital con el precio de aniversario. 16 semanas de formación, Zoom en vivo cada 15 días y el Google Ad Grant de $10,000 USD/mes.",
   robots: { index: false, follow: false },
 };
-
-const INCLUDES = [
-  "16 semanas de formación paso a paso (4 módulos)",
-  "Sesiones en vivo por Zoom cada 15 días",
-  "Cómo activar el Google Ad Grant: $10,000 USD/mes en publicidad gratis",
-  "Tu sitio web + Church Online Platform + streaming",
-  "Embudo de conversión y publicidad (orgánica y con IA SmartReach Ads)",
-  "Plantillas, checklists y documentos editables listos para usar",
-  "Semana de lanzamiento + seguimiento espiritual",
-  "Certificado de culminación",
-];
 
 export default function OfertaPage({
   searchParams,
@@ -61,20 +51,8 @@ export default function OfertaPage({
               </p>
             </div>
 
-            {/* Lo que incluye */}
-            <div className="my-7 rounded-[16px] border border-line2 bg-panel2 p-5 sm:p-6">
-              <h2 className="mb-3.5 font-display text-[18px] font-bold">Esto es lo que incluye:</h2>
-              <ul className="space-y-2.5">
-                {INCLUDES.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-[14.5px]">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-none text-good" aria-hidden>
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Qué es el programa + lo que incluye */}
+            <ProgramDetails className="my-7 text-left" />
 
             {/* Oferta + pago */}
             <div className="rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">

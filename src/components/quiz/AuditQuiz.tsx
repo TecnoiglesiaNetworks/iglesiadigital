@@ -8,6 +8,7 @@ import { Combobox, type ComboOption } from "./Combobox";
 import { loadCountries, type CountryOpt } from "./geo";
 import { PayPalCheckout } from "@/components/offer/PayPalCheckout";
 import { CountdownOffer } from "@/components/offer/CountdownOffer";
+import { ProgramDetails } from "@/components/offer/ProgramDetails";
 import { ChatwootWidget } from "@/components/ChatwootWidget";
 import { OFFER_PRICE, OFFER_PRICE_OLD, OFFER_CURRENCY, OFFER_PRODUCT } from "@/components/offer/config";
 import { cn } from "@/lib/utils";
@@ -381,6 +382,9 @@ export function AuditQuiz() {
                 <div className="mt-5 -mx-4 sm:mx-0">
                   <VslVideo />
                 </div>
+
+                {/* Qué es el programa (para que quede claro qué se compra) */}
+                <ProgramDetails className="mt-7 text-left" />
 
                 {/* Oferta especial + pago */}
                 <div className="mt-9 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">
