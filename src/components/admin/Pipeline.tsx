@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGroup, motion } from "framer-motion";
 import {
@@ -27,7 +27,23 @@ function dots(score: number | null) {
 export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
+  // La pestaña activa se guarda en la URL (?vista=webinar) para que sobreviva
+  // al recargar la página (F5). Se lee tras montar para no romper la hidratación.
   const [mode, setMode] = useState<"diagnostico" | "webinar">("diagnostico");
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("vista") === "webinar") {
+      setMode("webinar");
+    }
+  }, []);
+  function changeMode(m: "diagnostico" | "webinar") {
+    setMode(m);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (m === "webinar") url.searchParams.set("vista", "webinar");
+      else url.searchParams.delete("vista");
+      window.history.replaceState(null, "", url.toString());
+    }
+  }
   const [webinarOpen, setWebinarOpen] = useState(false);
   const [view, setView] = useState<"kanban" | "tabla">("kanban");
   const [search, setSearch] = useState("");
@@ -167,13 +183,13 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
           {/* Toggle Diagnóstico | Webinar */}
           <div className="flex overflow-hidden rounded-lg border border-slate-200 text-sm font-medium">
             <button
-              onClick={() => setMode("diagnostico")}
+              onClick={() => changeMode("diagnostico")}
               className={mode === "diagnostico" ? "bg-violet-600 px-3.5 py-2 text-white" : "bg-white px-3.5 py-2 text-slate-600 hover:bg-slate-50"}
             >
               Diagnóstico
             </button>
             <button
-              onClick={() => setMode("webinar")}
+              onClick={() => changeMode("webinar")}
               className={mode === "webinar" ? "bg-violet-600 px-3.5 py-2 text-white" : "bg-white px-3.5 py-2 text-slate-600 hover:bg-slate-50"}
             >
               Webinar
