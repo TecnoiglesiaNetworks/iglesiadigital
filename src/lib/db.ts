@@ -112,6 +112,8 @@ function init(): Database.Database {
   // para que un mismo lead pueda estar en ambos embudos).
   if (!has("wb_registered")) addColumn("ALTER TABLE leads ADD COLUMN wb_registered INTEGER NOT NULL DEFAULT 0");
   if (!has("wb_status")) addColumn("ALTER TABLE leads ADD COLUMN wb_status TEXT NOT NULL DEFAULT ''");
+  // Invitación masiva al webinar (para no invitar dos veces al mismo lead).
+  if (!has("wb_invited")) addColumn("ALTER TABLE leads ADD COLUMN wb_invited INTEGER NOT NULL DEFAULT 0");
   // Backfill: registros del webinar creados antes del flag (source='webinar').
   try {
     db.exec(
@@ -159,6 +161,7 @@ export type LeadRow = {
   wb_seq_next_at: string | null;
   wb_registered: number;
   wb_status: string;
+  wb_invited: number;
 };
 
 export type LeadInput = {
@@ -492,6 +495,28 @@ export function listWebinarLeads(): LeadRow[] {
   return db
     .prepare("SELECT * FROM leads WHERE wb_registered=1 ORDER BY datetime(created_at) DESC")
     .all() as LeadRow[];
+}
+
+// ── Invitación masiva al webinar (a los leads del diagnóstico) ────────────────
+// Elegibles: leads que NO son del webinar, no dados de baja, aún no registrados
+// al webinar y aún no invitados.
+function inviteWhere() {
+  return "source != 'webinar' AND unsubscribed=0 AND wb_registered=0 AND wb_invited=0 AND email IS NOT NULL AND email != ''";
+}
+export function countInviteEligible(): number {
+  const r = db.prepare(`SELECT COUNT(*) AS c FROM leads WHERE ${inviteWhere()}`).get() as { c: number };
+  return r.c;
+}
+export function nextInviteBatch(limit: number): LeadRow[] {
+  return db
+    .prepare(`SELECT * FROM leads WHERE ${inviteWhere()} ORDER BY datetime(created_at) ASC LIMIT ?`)
+    .all(limit) as LeadRow[];
+}
+export function markInvited(leadId: number): void {
+  db.prepare("UPDATE leads SET wb_invited=1, updated_at=@now WHERE id=@id").run({
+    id: leadId,
+    now: new Date().toISOString(),
+  });
 }
 
 // Marca a un lead como registrado al webinar (nuevo o existente). Conserva su

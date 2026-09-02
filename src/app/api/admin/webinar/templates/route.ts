@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { setWebinarTemplate, resetWebinarTemplate } from "@/lib/db";
-import { REMINDERS, POST_SEQUENCE, webinarPreview } from "@/lib/webinar-emails";
+import { REMINDERS, POST_SEQUENCE, INVITE, webinarPreview } from "@/lib/webinar-emails";
 
 export const runtime = "nodejs";
 
@@ -23,6 +23,7 @@ function buildList() {
   return {
     reminders: REMINDERS.map(map),
     sequence: POST_SEQUENCE.map(map),
+    invite: [INVITE].map(map),
   };
 }
 
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
   const key = (body.key || "").trim();
-  const valid = [...REMINDERS, ...POST_SEQUENCE].some((t) => t.key === key);
+  const valid = [...REMINDERS, ...POST_SEQUENCE, INVITE].some((t) => t.key === key);
   if (!valid) return NextResponse.json({ ok: false, error: "Clave inválida" }, { status: 422 });
 
   if (body.reset) {

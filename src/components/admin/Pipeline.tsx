@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGroup, motion } from "framer-motion";
 import {
-  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail, Radio,
+  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail, Radio, Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGES, WEBINAR_STAGES, STAGE_LABEL, TEMP_CLASS, type Lead } from "./stages";
@@ -58,6 +58,46 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const [overStage, setOverStage] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
+  // Invitación masiva al webinar (desde la vista Diagnóstico).
+  const [inviteEligible, setInviteEligible] = useState<number | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/webinar/invite")
+      .then((r) => r.json())
+      .then((d) => d?.ok && setInviteEligible(d.eligible))
+      .catch(() => {});
+  }, []);
+
+  async function inviteToWebinar() {
+    const total = inviteEligible ?? 0;
+    if (total <= 0) return;
+    if (!confirm(`Vas a invitar al webinar a ${total} lead(s) del diagnóstico (por correo). ¿Continuar?`)) return;
+    setInviting(true);
+    setInviteMsg("Enviando invitaciones…");
+    let sentTotal = 0;
+    try {
+      // Envía por lotes hasta agotar los elegibles.
+      for (let i = 0; i < 100; i++) {
+        const res = await fetch("/api/admin/webinar/invite", { method: "POST" });
+        const d = await res.json().catch(() => ({}));
+        if (!d?.ok) {
+          setInviteMsg(d?.error || "No se pudo enviar");
+          break;
+        }
+        sentTotal += d.sent || 0;
+        setInviteEligible(d.remaining ?? 0);
+        setInviteMsg(`Enviadas ${sentTotal}… (quedan ${d.remaining ?? 0})`);
+        if ((d.remaining ?? 0) <= 0 || (d.sent ?? 0) === 0) break;
+      }
+      setInviteMsg(`✅ Invitaciones enviadas: ${sentTotal}`);
+    } catch {
+      setInviteMsg("Error de conexión al enviar");
+    } finally {
+      setInviting(false);
+    }
+  }
 
   // ── Datos derivados ─────────────────────────────────────────────────────
   // Columnas activas según el modo (diagnóstico vs webinar).
@@ -321,7 +361,20 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
             Sincronizar Calendly
           </button>
         )}
-        {mode !== "webinar" && syncMsg && <span className="text-xs text-slate-500">{syncMsg}</span>}
+        {mode !== "webinar" && (
+          <button
+            onClick={inviteToWebinar}
+            disabled={inviting || (inviteEligible ?? 0) <= 0}
+            title="Enviar por correo la invitación al webinar a los leads del diagnóstico"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+          >
+            {inviting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+            Invitar al webinar{inviteEligible != null ? ` (${inviteEligible})` : ""}
+          </button>
+        )}
+        {mode !== "webinar" && (syncMsg || inviteMsg) && (
+          <span className="text-xs text-slate-500">{inviteMsg || syncMsg}</span>
+        )}
       </div>
 
       {/* Contenido */}

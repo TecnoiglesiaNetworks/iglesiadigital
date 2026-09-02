@@ -22,6 +22,9 @@ import {
   setWebinarSequence,
   logSequenceEmail,
   getSetting,
+  countInviteEligible,
+  nextInviteBatch,
+  markInvited,
   type LeadRow,
 } from "./db";
 import { unsubUrl } from "./unsubscribe";
@@ -85,7 +88,7 @@ function button(text: string, url: string, color: string) {
   </div>`;
 }
 
-function renderBodyHtml(text: string, l: LeadRow, cfg?: WebinarConfig) {
+function renderBodyHtml(text: string, l: LeadRow, cfg?: WebinarConfig, reason?: string) {
   const c = cfg ?? resolveWebinarConfig();
   const lines = text.split("\n").map((x) => x.trim()).filter(Boolean);
   const parts = lines.map((line) => {
@@ -93,19 +96,22 @@ function renderBodyHtml(text: string, l: LeadRow, cfg?: WebinarConfig) {
     if (grupo) return button(esc(subVars(grupo[1] || "Unirme al grupo de WhatsApp →", l, c)), c.whatsappGroupUrl, "#25D366");
     const yt = line.match(/^\[YOUTUBE(?::\s*(.*?))?\]$/i);
     if (yt) return button(esc(subVars(yt[1] || "Ver el webinar en vivo →", l, c)), c.youtubeUrl, "#FF0000");
+    const reg = line.match(/^\[REGISTRO(?::\s*(.*?))?\]$/i);
+    if (reg) return button(esc(subVars(reg[1] || "Registrarme gratis al webinar →", l, c)), `${BASE}/webinar`, "#FF5001");
     const off = line.match(/^\[OFERTA(?::\s*(.*?))?\]$/i);
     if (off) return button(esc(subVars(off[1] || "Inscribirme al curso →", l, c)), offerUrl(l), "#FF5001");
     return `<p style="${pStyle}">${inline(line, l, c)}</p>`;
   });
-  return shell(parts.join(""), unsubUrl(l.email));
+  return shell(parts.join(""), unsubUrl(l.email), c.title, reason);
 }
 
-function shell(inner: string, unsubscribeLink: string) {
+function shell(inner: string, unsubscribeLink: string, title: string, reason?: string) {
+  const why = reason || "te registraste al webinar gratuito";
   return `<!DOCTYPE html><html><body style="margin:0;background:#f4f5fb;font-family:Arial,Helvetica,sans-serif">
   <div style="max-width:560px;margin:0 auto;padding:24px">
     <div style="background:#150F2E;border-radius:18px 18px 0 0;padding:22px;text-align:center">
       <div style="color:#FF5001;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700">Webinar · Iglesia Digital</div>
-      <div style="color:#fff;font-size:17px;font-weight:800;margin-top:6px">La Gran Comisión también es Digital</div>
+      <div style="color:#fff;font-size:17px;font-weight:800;margin-top:6px">${title}</div>
     </div>
     <div style="background:#fff;border-radius:0 0 16px 16px;padding:26px">
       ${inner}
@@ -114,7 +120,7 @@ function shell(inner: string, unsubscribeLink: string) {
     <p style="color:#aab;font-size:11px;text-align:center;margin-top:16px;line-height:1.7">
       © Tecnoiglesia Network · Programa Iglesia Digital<br>
       ${POSTAL}<br>
-      Recibes este correo porque te registraste al webinar gratuito.<br>
+      Recibes este correo porque ${why}.<br>
       <a href="${unsubscribeLink}" style="color:#889;text-decoration:underline">Cancelar suscripción</a>
     </p>
   </div></body></html>`;
@@ -266,11 +272,26 @@ Si prefieres, respóndeme y platicamos antes de decidir. Estoy para servirte. �
   },
 ];
 
+// Invitación masiva al webinar (para los leads del diagnóstico). Editable.
+export const INVITE: WebinarTpl = {
+  key: "invite",
+  label: "Invitación al webinar (a leads del diagnóstico)",
+  whenLabel: "Envío manual",
+  subject: "{nombre}, te invito a un webinar gratuito 🙌",
+  body: `¡Hola {nombre}!
+Hiciste el diagnóstico digital de **{iglesia}**, y por eso quiero invitarte a algo que te va a servir muchísimo: un **webinar gratuito en vivo**.
+📅 **{fecha} · {hora}** ({zona})
+En una hora te voy a mostrar cómo usar **Google, redes sociales, publicidad e inteligencia artificial** para que tu iglesia alcance a más personas. Práctico y directo, sin relleno.
+Aparta tu lugar (es gratis y hay cupo limitado):
+[REGISTRO:Registrarme gratis al webinar →]
+Nos vemos en vivo. 🙏`,
+};
+
 // Devuelve el texto (editado si existe, o el de por defecto) por clave.
 export function webinarTemplateFor(key: string): { subject: string; body: string } {
   const override = getWebinarTemplate(key);
   if (override) return override;
-  const all = [...REMINDERS, ...POST_SEQUENCE];
+  const all = [...REMINDERS, ...POST_SEQUENCE, INVITE];
   const d = all.find((t) => t.key === key);
   return { subject: d?.subject || "", body: d?.body || "" };
 }
@@ -294,18 +315,42 @@ export function webinarPreview(key: string) {
 }
 
 // Envía un correo del webinar a un lead usando su plantilla (por clave).
-export async function sendWebinarEmail(lead: LeadRow, key: string): Promise<void> {
+// `reason` cambia el pie de correo (para la invitación a leads del diagnóstico).
+export async function sendWebinarEmail(lead: LeadRow, key: string, reason?: string): Promise<void> {
   const tpl = webinarTemplateFor(key);
   const subject = subVars(tpl.subject, lead);
   await sendEmail({
     to: lead.email,
     subject,
-    html: renderBodyHtml(tpl.body, lead),
+    html: renderBodyHtml(tpl.body, lead, undefined, reason),
     replyTo: "contacto@tecnoiglesia.com",
     listUnsubscribe: unsubUrl(lead.email),
   });
   // step -1 para diferenciar los correos del webinar en el historial.
   logSequenceEmail(lead.id, -1, `[Webinar] ${subject}`);
+}
+
+// Envía la invitación al webinar a un lote de leads del diagnóstico y los marca
+// como invitados. Devuelve cuántos se enviaron, cuántos fallaron y cuántos quedan.
+export async function sendInviteBatch(batchSize = 60): Promise<{ sent: number; errors: number; remaining: number }> {
+  if (!mailerReady()) {
+    return { sent: 0, errors: 0, remaining: countInviteEligible() };
+  }
+  const leads = nextInviteBatch(batchSize);
+  let sent = 0;
+  let errors = 0;
+  const reason = "hiciste el diagnóstico digital de tu iglesia";
+  for (const lead of leads) {
+    try {
+      await sendWebinarEmail(lead, "invite", reason);
+      markInvited(lead.id);
+      sent++;
+    } catch (e) {
+      console.error("[webinar] error invitando a", lead.email, e);
+      errors++;
+    }
+  }
+  return { sent, errors, remaining: countInviteEligible() };
 }
 
 // ── Momentos clave del evento ─────────────────────────────────────────────────

@@ -17,6 +17,7 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [reminders, setReminders] = useState<Tpl[]>([]);
   const [sequence, setSequence] = useState<Tpl[]>([]);
+  const [invite, setInvite] = useState<Tpl[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState({ subject: "", body: "" });
@@ -45,6 +46,7 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
         if (tpls?.ok) {
           setReminders(tpls.reminders || []);
           setSequence(tpls.sequence || []);
+          setInvite(tpls.invite || []);
         }
         if (settings?.ok) {
           setYtUrl(settings.youtubeUrl || "");
@@ -115,6 +117,7 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
     if (d?.ok) {
       setReminders(d.reminders || []);
       setSequence(d.sequence || []);
+      setInvite(d.invite || []);
       setEditing(null);
     } else {
       alert(d?.error || "No se pudo guardar");
@@ -311,6 +314,13 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
                   Pon aquí el enlace del directo antes del evento. Si está vacío, el correo de las 30 min saldrá sin botón funcional.
                 </p>
               </div>
+
+              {/* Invitación (a leads del diagnóstico) */}
+              <h3 className="mb-2 text-sm font-bold text-slate-700">Invitación al webinar</h3>
+              <p className="mb-3 text-[12.5px] text-slate-500">
+                Este es el correo que se envía a los leads del diagnóstico cuando usas <b>“Invitar al webinar”</b>. Puedes editarlo.
+              </p>
+              <div className="mb-7 space-y-3">{invite.map(renderCard)}</div>
 
               {/* Recordatorios */}
               <h3 className="mb-2 text-sm font-bold text-slate-700">Recordatorios (antes y durante el evento)</h3>
