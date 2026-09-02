@@ -19,7 +19,8 @@ import {
   Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { WEBINAR, WEBINAR_TIMES } from "@/lib/webinar";
+import { WEBINAR } from "@/lib/webinar";
+import type { WebinarConfig } from "@/lib/webinar-config";
 import { Combobox, type ComboOption } from "@/components/quiz/Combobox";
 import { loadCountries, type CountryOpt } from "@/components/quiz/geo";
 
@@ -94,7 +95,21 @@ function useCountdown(target: string) {
 
 /* Título del webinar replicado en código (dorado metálico animado + glow).
    Se mantiene como <h1> con el texto real para SEO/lectores de pantalla. */
-function WebinarTitle() {
+function WebinarTitle({ title, isDefault }: { title: string; isDefault: boolean }) {
+  // Título editable: si es el nombre por defecto, mantenemos el arte animado
+  // de 4 líneas; si lo cambiaron desde el admin, mostramos el nuevo nombre con
+  // un estilo dorado limpio (para que funcione con cualquier texto).
+  if (!isDefault) {
+    return (
+      <h1 className="mt-5 flex flex-col items-center text-center font-display font-extrabold uppercase leading-[1.02]">
+        <span className="block wtitle-gold text-[clamp(30px,6.5vw,60px)]">{title}</span>
+        <span className="wtitle-spark mx-auto mt-4" aria-hidden />
+        <span className="mt-2 block wtitle-white text-[clamp(15px,2.6vw,22px)] font-semibold normal-case tracking-wide opacity-95">
+          Webinar Gratuito
+        </span>
+      </h1>
+    );
+  }
   return (
     <h1 className="mt-5 flex flex-col items-center text-center font-display font-extrabold uppercase leading-[0.95]">
       <span className="block wtitle-white text-[clamp(34px,7vw,64px)]">La Gran</span>
@@ -156,8 +171,8 @@ function Unit({ value, label }: { value: number; label: string }) {
   );
 }
 
-export function WebinarLanding() {
-  const cd = useCountdown(WEBINAR.startsAt);
+export function WebinarLanding({ cfg }: { cfg: WebinarConfig }) {
+  const cd = useCountdown(cfg.startsAt);
   const [done, setDone] = useState(false);
 
   return (
@@ -170,9 +185,9 @@ export function WebinarLanding() {
             <Radio size={14} /> Webinar gratuito · En vivo
           </div>
 
-          <WebinarTitle />
+          <WebinarTitle title={cfg.title} isDefault={cfg.title === WEBINAR.title} />
           <p className="mt-5 max-w-[54ch] text-[clamp(16px,2.4vw,19px)] text-muted">
-            {WEBINAR.subtitle}
+            {cfg.subtitle}
           </p>
 
           {/* Contador */}
@@ -194,10 +209,10 @@ export function WebinarLanding() {
           {/* Fecha y hora */}
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <div className="inline-flex items-center gap-2.5 rounded-xl border border-line bg-panel px-4 py-3 text-[15px] font-semibold text-ink">
-              <CalendarDays size={18} className="text-brand" /> {WEBINAR.dateLabel}
+              <CalendarDays size={18} className="text-brand" /> {cfg.dateLabel}
             </div>
             <div className="inline-flex items-center gap-2.5 rounded-xl border border-line bg-panel px-4 py-3 text-[15px] font-semibold text-ink">
-              <Clock size={18} className="text-accent" /> {WEBINAR.timeLabel}
+              <Clock size={18} className="text-accent" /> {cfg.timeLabel}
               <span className="text-[13px] font-normal text-muted">CDMX</span>
             </div>
           </div>
@@ -292,12 +307,12 @@ export function WebinarLanding() {
               <span className="text-[13px] font-semibold uppercase tracking-wider">Encuentra tu horario</span>
             </div>
             <h2 className="mt-3 font-display text-[clamp(22px,3.6vw,30px)] font-bold text-ink">
-              8:00 PM hora de México — ¿y en tu país?
+              {cfg.timeLabel} hora de México — ¿y en tu país?
             </h2>
           </div>
 
           <div className="mx-auto mt-9 grid max-w-[820px] gap-2.5 sm:grid-cols-2">
-            {WEBINAR_TIMES.map((t) => (
+            {cfg.times.map((t) => (
               <div
                 key={t.region}
                 className="flex items-center justify-between rounded-xl border border-line bg-panel px-4 py-3"

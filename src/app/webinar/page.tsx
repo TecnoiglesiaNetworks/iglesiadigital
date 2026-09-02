@@ -1,27 +1,35 @@
 import type { Metadata } from "next";
 import { AuroraBackground } from "@/components/ui/animated-background";
 import { WebinarLanding } from "@/components/webinar/WebinarLanding";
+import { resolveWebinarConfig } from "@/lib/webinar-config";
 
-export const metadata: Metadata = {
-  title: "Webinar gratis: La Gran Comisión también es digital",
-  description:
-    "Webinar en vivo y gratuito para pastores y líderes. Aprende a usar Google, redes sociales, publicidad e inteligencia artificial para alcanzar a más personas. Lunes 7 de septiembre, 8:00 PM (CDMX). Cupos limitados.",
-  alternates: { canonical: "/webinar" },
-  openGraph: {
-    type: "website",
-    url: "/webinar",
-    title: "Webinar gratis: La Gran Comisión también es digital · Iglesia Digital",
-    description:
-      "Cómo usar Google, redes, publicidad e IA para alcanzar a más personas. En vivo, gratis. Lunes 7 de septiembre, 8:00 PM (CDMX).",
-  },
-};
+// La config puede cambiar desde el admin (nombre, fecha/hora), así que la
+// página se renderiza en cada request.
+export const dynamic = "force-dynamic";
+
+export function generateMetadata(): Metadata {
+  const cfg = resolveWebinarConfig();
+  const desc = `${cfg.subtitle} En vivo, gratis. ${cfg.dateLabel}, ${cfg.timeLabel} (CDMX). Cupos limitados.`;
+  return {
+    title: `Webinar gratis: ${cfg.title}`,
+    description: desc,
+    alternates: { canonical: "/webinar" },
+    openGraph: {
+      type: "website",
+      url: "/webinar",
+      title: `Webinar gratis: ${cfg.title} · Iglesia Digital`,
+      description: desc,
+    },
+  };
+}
 
 export default function WebinarPage() {
+  const cfg = resolveWebinarConfig();
   return (
     <>
       <main className="relative">
         <AuroraBackground className="min-h-screen">
-          <WebinarLanding />
+          <WebinarLanding cfg={cfg} />
         </AuroraBackground>
       </main>
 

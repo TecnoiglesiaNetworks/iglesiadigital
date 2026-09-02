@@ -8,12 +8,12 @@ export const WEBINAR = {
   title: "LA GRAN COMISIÓN TAMBIÉN ES DIGITAL",
   subtitle:
     "Cómo usar Google, redes sociales, publicidad e IA para alcanzar a más personas.",
-  // Lunes 7 de septiembre de 2026, 8:00 pm hora CDMX.
-  startsAt: "2026-09-07T20:00:00-06:00",
+  // Martes 8 de septiembre de 2026, 8:00 pm hora CDMX.
+  startsAt: "2026-09-08T20:00:00-06:00",
   // Duración estimada (minutos). Define cuándo arranca la secuencia post-evento.
   durationMin: 90,
   // Etiqueta humana principal (hora CDMX).
-  dateLabel: "Lunes 7 de septiembre",
+  dateLabel: "Martes 8 de septiembre",
   timeLabel: "8:00 PM",
   timeZoneMain: "Hora de la Ciudad de México (CDMX)",
   // Grupo de WhatsApp del Paso 2 (seguimiento del evento).
@@ -33,5 +33,5 @@ export const WEBINAR_TIMES: { region: string; time: string }[] = [
   { region: "🇺🇸 EE.UU. Pacífico (Los Ángeles)", time: "7:00 PM" },
   { region: "🇧🇴🇻🇪🇩🇴 Bolivia · Venezuela · Rep. Dom.", time: "10:00 PM" },
   { region: "🇨🇱🇦🇷🇺🇾 Chile · Argentina · Uruguay", time: "11:00 PM" },
-  { region: "🇪🇸 España", time: "4:00 AM (martes)" },
+  { region: "🇪🇸 España", time: "4:00 AM (miércoles)" },
 ];

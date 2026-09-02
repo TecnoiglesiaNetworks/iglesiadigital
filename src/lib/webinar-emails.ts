@@ -26,6 +26,7 @@ import {
 } from "./db";
 import { unsubUrl } from "./unsubscribe";
 import { WEBINAR } from "./webinar";
+import { resolveWebinarConfig, type WebinarConfig } from "./webinar-config";
 
 const BASE = process.env.PUBLIC_BASE_URL || "https://iglesiadigital.net";
 const OFFER_PATH = "/oferta";
@@ -63,11 +64,17 @@ function offerUrl(l: LeadRow) {
 function esc(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-function subVars(s: string, l: LeadRow) {
-  return s.replace(/\{nombre\}/g, first(l)).replace(/\{iglesia\}/g, iglesia(l));
+function subVars(s: string, l: LeadRow, cfg?: WebinarConfig) {
+  const c = cfg ?? resolveWebinarConfig();
+  return s
+    .replace(/\{nombre\}/g, first(l))
+    .replace(/\{iglesia\}/g, iglesia(l))
+    .replace(/\{fecha\}/g, c.dateLabel)
+    .replace(/\{hora\}/g, c.timeLabel)
+    .replace(/\{zona\}/g, c.timeZoneMain);
 }
-function inline(s: string, l: LeadRow) {
-  return esc(subVars(s, l)).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+function inline(s: string, l: LeadRow, cfg?: WebinarConfig) {
+  return esc(subVars(s, l, cfg)).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
 }
 
 const pStyle = "color:#445;font-size:15px;line-height:1.6;margin:0 0 14px";
@@ -78,16 +85,17 @@ function button(text: string, url: string, color: string) {
   </div>`;
 }
 
-function renderBodyHtml(text: string, l: LeadRow) {
+function renderBodyHtml(text: string, l: LeadRow, cfg?: WebinarConfig) {
+  const c = cfg ?? resolveWebinarConfig();
   const lines = text.split("\n").map((x) => x.trim()).filter(Boolean);
   const parts = lines.map((line) => {
     const grupo = line.match(/^\[GRUPO(?::\s*(.*?))?\]$/i);
-    if (grupo) return button(esc(subVars(grupo[1] || "Unirme al grupo de WhatsApp →", l)), WEBINAR.whatsappGroupUrl, "#25D366");
+    if (grupo) return button(esc(subVars(grupo[1] || "Unirme al grupo de WhatsApp →", l, c)), c.whatsappGroupUrl, "#25D366");
     const yt = line.match(/^\[YOUTUBE(?::\s*(.*?))?\]$/i);
-    if (yt) return button(esc(subVars(yt[1] || "Ver el webinar en vivo →", l)), youtubeUrl(), "#FF0000");
+    if (yt) return button(esc(subVars(yt[1] || "Ver el webinar en vivo →", l, c)), c.youtubeUrl, "#FF0000");
     const off = line.match(/^\[OFERTA(?::\s*(.*?))?\]$/i);
-    if (off) return button(esc(subVars(off[1] || "Inscribirme al curso →", l)), offerUrl(l), "#FF5001");
-    return `<p style="${pStyle}">${inline(line, l)}</p>`;
+    if (off) return button(esc(subVars(off[1] || "Inscribirme al curso →", l, c)), offerUrl(l), "#FF5001");
+    return `<p style="${pStyle}">${inline(line, l, c)}</p>`;
   });
   return shell(parts.join(""), unsubUrl(l.email));
 }
@@ -125,7 +133,7 @@ export const REMINDERS: (WebinarTpl & { offsetMin: number })[] = [
     subject: "¡Registro confirmado! Nos vemos en el webinar 🎉",
     body: `¡Hola {nombre}!
 Tu lugar para el webinar **La Gran Comisión también es Digital** quedó apartado. 🎉
-📅 **${WEBINAR.dateLabel} · ${WEBINAR.timeLabel}** (${WEBINAR.timeZoneMain})
+📅 **{fecha} · {hora}** ({zona})
 No te lo puedes perder: en una hora te voy a mostrar cómo usar Google, redes, publicidad e IA para que **{iglesia}** alcance a más personas.
 Falta un paso importante para que no te quedes fuera: únete al **grupo de WhatsApp** del webinar. Ahí te avisaremos todo (dinámicas, material y el enlace de acceso el día del evento).
 [GRUPO:Unirme al grupo de WhatsApp →]
@@ -139,7 +147,7 @@ El enlace para ver el webinar en vivo te llegará por este correo el día del ev
     subject: "Mañana es el webinar 🙌 (te llega el link el día del evento)",
     body: `Hola {nombre},
 Ya casi es momento. **Mañana** es nuestro webinar **La Gran Comisión también es Digital**.
-📅 **${WEBINAR.dateLabel} · ${WEBINAR.timeLabel}** (${WEBINAR.timeZoneMain})
+📅 **{fecha} · {hora}** ({zona})
 El **día del evento** te enviaremos por aquí el enlace para verlo en vivo, así que mantente pendiente de tu correo y del grupo de WhatsApp.
 Si aún no estás en el grupo, únete ahora para no perderte ningún aviso:
 [GRUPO:Unirme al grupo de WhatsApp →]
@@ -153,7 +161,7 @@ Prepárate para tomar notas. Va a ser muy práctico. 🙏`,
     subject: "⏰ En 1 hora empezamos — La Gran Comisión también es Digital",
     body: `{nombre}, ¡ya casi! 🙌
 En **1 hora** comienza el webinar en vivo.
-🕗 Hoy · **${WEBINAR.timeLabel}** (${WEBINAR.timeZoneMain})
+🕗 Hoy · **{hora}** ({zona})
 En unos minutos, antes de empezar, te enviaré por aquí el **enlace directo de YouTube** para que entres. Ten tu teléfono o computadora listos y busca un lugar tranquilo.
 ¿Sigues en el grupo de WhatsApp? Ahí también compartiremos el acceso:
 [GRUPO:Abrir el grupo de WhatsApp →]`,
@@ -302,7 +310,7 @@ export async function sendWebinarEmail(lead: LeadRow, key: string): Promise<void
 
 // ── Momentos clave del evento ─────────────────────────────────────────────────
 export function eventStart(): number {
-  return new Date(WEBINAR.startsAt).getTime();
+  return new Date(resolveWebinarConfig().startsAt).getTime();
 }
 export function eventEnd(): number {
   return eventStart() + WEBINAR.durationMin * 60_000;

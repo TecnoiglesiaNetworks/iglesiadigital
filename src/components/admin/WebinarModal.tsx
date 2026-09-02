@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { X, Radio, Loader2, Eye, EyeOff, Pencil, Save, RotateCcw, Youtube, Check } from "lucide-react";
+import { X, Radio, Loader2, Eye, EyeOff, Pencil, Save, RotateCcw, Youtube, Check, CalendarClock } from "lucide-react";
 
 type Tpl = {
   key: string;
@@ -26,6 +26,14 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
   const [ytSaving, setYtSaving] = useState(false);
   const [ytSaved, setYtSaved] = useState(false);
 
+  // Datos del webinar (nombre, subtítulo, fecha/hora).
+  const [title, setTitle] = useState("");
+  const [subtitle, setSubtitle] = useState("");
+  const [startsAtLocal, setStartsAtLocal] = useState("");
+  const [whenLabel, setWhenLabel] = useState("");
+  const [datosSaving, setDatosSaving] = useState(false);
+  const [datosSaved, setDatosSaved] = useState(false);
+
   useEffect(() => {
     let alive = true;
     Promise.all([
@@ -38,13 +46,38 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
           setReminders(tpls.reminders || []);
           setSequence(tpls.sequence || []);
         }
-        if (settings?.ok) setYtUrl(settings.youtubeUrl || "");
+        if (settings?.ok) {
+          setYtUrl(settings.youtubeUrl || "");
+          setTitle(settings.title || "");
+          setSubtitle(settings.subtitle || "");
+          setStartsAtLocal(settings.startsAtLocal || "");
+          setWhenLabel(`${settings.dateLabel || ""} · ${settings.timeLabel || ""}`);
+        }
       })
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
   }, []);
+
+  async function saveDatos() {
+    setDatosSaving(true);
+    setDatosSaved(false);
+    const res = await fetch("/api/admin/webinar/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, subtitle, startsAtLocal }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setDatosSaving(false);
+    if (d?.ok) {
+      setWhenLabel(`${d.dateLabel || ""} · ${d.timeLabel || ""}`);
+      setDatosSaved(true);
+      setTimeout(() => setDatosSaved(false), 2500);
+    } else {
+      alert(d?.error || "No se pudo guardar");
+    }
+  }
 
   async function saveYt() {
     setYtSaving(true);
@@ -202,6 +235,57 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <>
+              {/* Datos del webinar: nombre y fecha/hora */}
+              <div className="mb-5 rounded-xl border border-violet-200 bg-violet-50/60 p-4">
+                <label className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold text-slate-700">
+                  <CalendarClock size={16} className="text-violet-600" /> Datos del webinar
+                </label>
+                <div className="space-y-2.5">
+                  <div>
+                    <span className="mb-1 block text-[12px] font-medium text-slate-500">Nombre del webinar</span>
+                    <input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="La Gran Comisión también es Digital"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <span className="mb-1 block text-[12px] font-medium text-slate-500">Subtítulo</span>
+                    <input
+                      value={subtitle}
+                      onChange={(e) => setSubtitle(e.target.value)}
+                      placeholder="Cómo usar Google, redes, publicidad e IA…"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-violet-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <div className="flex-1">
+                      <span className="mb-1 block text-[12px] font-medium text-slate-500">Fecha y hora (CDMX)</span>
+                      <input
+                        type="datetime-local"
+                        value={startsAtLocal}
+                        onChange={(e) => setStartsAtLocal(e.target.value)}
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-violet-500"
+                      />
+                    </div>
+                    <button
+                      onClick={saveDatos}
+                      disabled={datosSaving}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                    >
+                      {datosSaving ? <Loader2 size={14} className="animate-spin" /> : datosSaved ? <Check size={14} /> : <Save size={14} />}
+                      {datosSaved ? "Guardado" : "Guardar"}
+                    </button>
+                  </div>
+                </div>
+                {whenLabel.trim() !== "·" && (
+                  <p className="mt-2 text-[12px] text-slate-500">
+                    Se mostrará como: <b className="text-slate-700">{whenLabel}</b> (hora CDMX). Los horarios de otros países se recalculan solos.
+                  </p>
+                )}
+              </div>
+
               {/* Link de YouTube */}
               <div className="mb-6 rounded-xl border border-red-200 bg-red-50/60 p-4">
                 <label className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold text-slate-700">
