@@ -102,3 +102,81 @@ body {
   }
   .btn-accent:hover { transform: translateY(-2px); background: var(--accent-soft); }
 }
+
+/* =====================================================================
+   TÍTULO DEL WEBINAR — réplica del arte "La Gran Comisión también es
+   Digital": blanco con halo, dorado metálico con brillo animado y líneas
+   con glow pulsante. Todo en código (sin imagen).
+   ===================================================================== */
+.wtitle-white {
+  color: #ffffff;
+  text-shadow: 0 0 22px rgba(255, 255, 255, 0.45), 0 2px 3px rgba(0, 0, 0, 0.45);
+}
+.wtitle-gold {
+  background: linear-gradient(
+    100deg,
+    #b9791a 0%, #f5d061 18%, #fff6d6 30%, #f5d061 42%,
+    #c6851a 58%, #f7dd82 78%, #b9791a 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(197, 133, 26, 0.35));
+  animation: wshine 6s linear infinite;
+}
+@keyframes wshine { to { background-position: 220% center; } }
+
+.wtitle-line {
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, #f5d061, #fff3c4, #f5d061, transparent);
+  box-shadow: 0 0 14px 1px rgba(245, 208, 97, 0.7);
+  animation: wlineglow 2.6s ease-in-out infinite;
+}
+@keyframes wlineglow {
+  0%, 100% { opacity: 0.5; box-shadow: 0 0 8px rgba(245, 208, 97, 0.45); }
+  50%      { opacity: 1;   box-shadow: 0 0 22px 2px rgba(245, 208, 97, 0.9); }
+}
+
+.wtitle-spark {
+  width: clamp(150px, 26vw, 240px); height: 3px; border-radius: 99px;
+  background: linear-gradient(90deg, transparent, rgba(245, 208, 97, 0.6) 30%, #fff6d6 50%, rgba(245, 208, 97, 0.6) 70%, transparent);
+  box-shadow: 0 0 16px 2px rgba(255, 224, 130, 0.75);
+  position: relative;
+  animation: wsparkpulse 3s ease-in-out infinite;
+}
+/* Núcleo brillante central (lens flare). */
+.wtitle-spark::before {
+  content: "";
+  position: absolute; top: 50%; left: 50%;
+  width: 60px; height: 10px; transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(255, 255, 245, 0.95), rgba(255, 224, 130, 0.5), transparent);
+  filter: blur(1px);
+}
+@keyframes wsparkpulse {
+  0%, 100% { opacity: 0.55; transform: scaleX(0.8); }
+  50%      { opacity: 1;    transform: scaleX(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wtitle-gold, .wtitle-line, .wtitle-spark { animation: none !important; }
+}
+
+/* Barra de progreso con líneas diagonales en movimiento (estilo barbería). */
+.wbar-fill {
+  background-image:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.22) 0, rgba(255, 255, 255, 0.22) 10px,
+      transparent 10px, transparent 20px
+    ),
+    linear-gradient(90deg, var(--brand), var(--accent));
+  background-size: 28.3px 28.3px, 100% 100%;
+  animation: wbarmove 0.8s linear infinite;
+}
+@keyframes wbarmove { to { background-position: -28.3px 0, 0 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wbar-fill { animation: none !important; }
+}

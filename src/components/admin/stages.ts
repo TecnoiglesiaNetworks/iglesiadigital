@@ -22,8 +22,18 @@ export const STAGES: { id: StageId; label: string; dot: string }[] = [
   { id: "perdido", label: "Cerrado perdido", dot: "#334155" },
 ];
 
+// Etapas del pipeline del WEBINAR (columnas cuando el panel está en modo webinar).
+export const WEBINAR_STAGES: { id: string; label: string; dot: string }[] = [
+  { id: "registrado", label: "Registrado", dot: "#94a3b8" },
+  { id: "asistio", label: "Asistió", dot: "#22c55e" },
+  { id: "no_asistio", label: "No asistió", dot: "#f97316" },
+  { id: "seguimiento", label: "En seguimiento", dot: "#3b82f6" },
+  { id: "cliente", label: "Cliente", dot: "#16a34a" },
+  { id: "perdido", label: "Perdido", dot: "#334155" },
+];
+
 export const STAGE_LABEL: Record<string, string> = Object.fromEntries(
-  STAGES.map((s) => [s.id, s.label])
+  [...STAGES, ...WEBINAR_STAGES].map((s) => [s.id, s.label])
 );
 
 export type Temperature = "caliente" | "tibio" | "frio";

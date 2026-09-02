@@ -3,15 +3,16 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGroup, motion } from "framer-motion";
 import {
-  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail,
+  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail, Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { STAGES, STAGE_LABEL, TEMP_CLASS, type Lead, type StageId } from "./stages";
+import { STAGES, WEBINAR_STAGES, STAGE_LABEL, TEMP_CLASS, type Lead } from "./stages";
 import { LeadDrawer } from "./LeadDrawer";
 import { AddLeadModal } from "./AddLeadModal";
 import { UsersModal } from "./UsersModal";
 import { IntegrationsModal } from "./IntegrationsModal";
 import { EmailsModal } from "./EmailsModal";
+import { WebinarModal } from "./WebinarModal";
 
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
@@ -26,6 +27,8 @@ function dots(score: number | null) {
 export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
+  const [mode, setMode] = useState<"diagnostico" | "webinar">("diagnostico");
+  const [webinarOpen, setWebinarOpen] = useState(false);
   const [view, setView] = useState<"kanban" | "tabla">("kanban");
   const [search, setSearch] = useState("");
   const [calendlyOnly, setCalendlyOnly] = useState(false);
@@ -36,14 +39,20 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [emailsOpen, setEmailsOpen] = useState(false);
   const [dragId, setDragId] = useState<number | null>(null);
-  const [overStage, setOverStage] = useState<StageId | null>(null);
+  const [overStage, setOverStage] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
 
   // ── Datos derivados ─────────────────────────────────────────────────────
+  // Columnas activas según el modo (diagnóstico vs webinar).
+  const activeStages = mode === "webinar" ? WEBINAR_STAGES : STAGES;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let out = leads.filter((l) => {
+      // Separa los dos embudos por origen del lead.
+      const isWebinar = l.source === "webinar";
+      if (mode === "webinar" ? !isWebinar : isWebinar) return false;
       if (calendlyOnly && !l.scheduled_at) return false;
       if (!q) return true;
       return (
@@ -59,14 +68,14 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
       return sort === "recent" ? db - da : da - db;
     });
     return out;
-  }, [leads, search, calendlyOnly, sort]);
+  }, [leads, search, calendlyOnly, sort, mode]);
 
   const byStage = useMemo(() => {
     const map: Record<string, Lead[]> = {};
-    for (const s of STAGES) map[s.id] = [];
+    for (const s of activeStages) map[s.id] = [];
     for (const l of filtered) (map[l.status] ??= []).push(l);
     return map;
-  }, [filtered]);
+  }, [filtered, activeStages]);
 
   // ── Acciones ────────────────────────────────────────────────────────────
   async function refresh() {
@@ -133,7 +142,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
     router.refresh();
   }
 
-  function onDrop(stage: StageId) {
+  function onDrop(stage: string) {
     if (dragId == null) return;
     const lead = leads.find((l) => l.id === dragId);
     if (lead && lead.status !== stage) patchLead(dragId, { status: stage });
@@ -146,11 +155,40 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
     <div className="flex h-screen flex-col">
       {/* Cabecera */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-5 py-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">Pipeline de Ventas</h1>
-          <p className="text-sm text-slate-500">Gestiona tus leads y oportunidades</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">
+              {mode === "webinar" ? "Registros del Webinar" : "Pipeline de Ventas"}
+            </h1>
+            <p className="text-sm text-slate-500">
+              {mode === "webinar" ? "Seguimiento de los registrados al webinar" : "Gestiona tus leads y oportunidades"}
+            </p>
+          </div>
+          {/* Toggle Diagnóstico | Webinar */}
+          <div className="flex overflow-hidden rounded-lg border border-slate-200 text-sm font-medium">
+            <button
+              onClick={() => setMode("diagnostico")}
+              className={mode === "diagnostico" ? "bg-violet-600 px-3.5 py-2 text-white" : "bg-white px-3.5 py-2 text-slate-600 hover:bg-slate-50"}
+            >
+              Diagnóstico
+            </button>
+            <button
+              onClick={() => setMode("webinar")}
+              className={mode === "webinar" ? "bg-violet-600 px-3.5 py-2 text-white" : "bg-white px-3.5 py-2 text-slate-600 hover:bg-slate-50"}
+            >
+              Webinar
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
+          {mode === "webinar" && (
+            <button
+              onClick={() => setWebinarOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              <Radio size={15} /> Config. webinar
+            </button>
+          )}
           <button
             onClick={() => setAddOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
@@ -221,16 +259,18 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
           />
         </div>
 
-        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
-          <input
-            type="checkbox"
-            checked={calendlyOnly}
-            onChange={(e) => setCalendlyOnly(e.target.checked)}
-            className="peer sr-only"
-          />
-          <span className="relative h-5 w-9 rounded-full bg-slate-300 transition-colors peer-checked:bg-violet-600 after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-4" />
-          Solo con cita Calendly
-        </label>
+        {mode !== "webinar" && (
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={calendlyOnly}
+              onChange={(e) => setCalendlyOnly(e.target.checked)}
+              className="peer sr-only"
+            />
+            <span className="relative h-5 w-9 rounded-full bg-slate-300 transition-colors peer-checked:bg-violet-600 after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-4" />
+            Solo con cita Calendly
+          </label>
+        )}
 
         <label className="ml-auto inline-flex items-center gap-2 text-sm text-slate-600">
           Orden:
@@ -245,22 +285,24 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
           </select>
         </label>
 
-        <button
-          onClick={syncCalendly}
-          disabled={syncing}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-        >
-          {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          Sincronizar Calendly
-        </button>
-        {syncMsg && <span className="text-xs text-slate-500">{syncMsg}</span>}
+        {mode !== "webinar" && (
+          <button
+            onClick={syncCalendly}
+            disabled={syncing}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+          >
+            {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            Sincronizar Calendly
+          </button>
+        )}
+        {mode !== "webinar" && syncMsg && <span className="text-xs text-slate-500">{syncMsg}</span>}
       </div>
 
       {/* Contenido */}
       {view === "kanban" ? (
         <LayoutGroup>
           <div className="flex flex-1 gap-3 overflow-x-auto bg-slate-100 p-4">
-            {STAGES.map((s) => {
+            {activeStages.map((s) => {
               const items = byStage[s.id] || [];
               const over = overStage === s.id;
               return (
@@ -328,6 +370,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
       {usersOpen && <UsersModal onClose={() => setUsersOpen(false)} />}
       {integrationsOpen && <IntegrationsModal onClose={() => setIntegrationsOpen(false)} />}
       {emailsOpen && <EmailsModal onClose={() => setEmailsOpen(false)} />}
+      {webinarOpen && <WebinarModal onClose={() => setWebinarOpen(false)} />}
     </div>
   );
 }

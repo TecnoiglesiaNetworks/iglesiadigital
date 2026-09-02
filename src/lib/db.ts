@@ -60,6 +60,22 @@ function init(): Database.Database {
       body       TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    -- Plantillas editables de los correos del WEBINAR (clave por string:
+    -- 'confirm', 'r1', 'r2', 'r3', 's1'..'s7').
+    CREATE TABLE IF NOT EXISTS webinar_templates (
+      key        TEXT PRIMARY KEY,
+      subject    TEXT NOT NULL,
+      body       TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    -- Ajustes generales editables desde el admin (p. ej. el link de YouTube
+    -- del webinar). Clave/valor simple.
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
 
   // Migración: columnas de pago (para bases creadas antes de esta versión).
@@ -83,6 +99,15 @@ function init(): Database.Database {
   if (!has("seq_step")) addColumn("ALTER TABLE leads ADD COLUMN seq_step INTEGER NOT NULL DEFAULT 0");
   if (!has("seq_next_at")) addColumn("ALTER TABLE leads ADD COLUMN seq_next_at TEXT");
   if (!has("unsubscribed")) addColumn("ALTER TABLE leads ADD COLUMN unsubscribed INTEGER NOT NULL DEFAULT 0");
+  // ── Webinar (aislado de la secuencia del diagnóstico) ──────────────────────
+  // Recordatorios anclados a la fecha del evento ya enviados (JSON de claves).
+  if (!has("wb_reminders_sent")) addColumn("ALTER TABLE leads ADD COLUMN wb_reminders_sent TEXT NOT NULL DEFAULT ''");
+  // Marca de asistencia (para el pipeline del webinar).
+  if (!has("wb_attended")) addColumn("ALTER TABLE leads ADD COLUMN wb_attended INTEGER NOT NULL DEFAULT 0");
+  // Secuencia de venta POST-evento (independiente de la del quiz).
+  if (!has("wb_seq_status")) addColumn("ALTER TABLE leads ADD COLUMN wb_seq_status TEXT NOT NULL DEFAULT ''");
+  if (!has("wb_seq_step")) addColumn("ALTER TABLE leads ADD COLUMN wb_seq_step INTEGER NOT NULL DEFAULT 0");
+  if (!has("wb_seq_next_at")) addColumn("ALTER TABLE leads ADD COLUMN wb_seq_next_at TEXT");
 
   return db;
 }
@@ -117,6 +142,11 @@ export type LeadRow = {
   seq_step: number;
   seq_next_at: string | null;
   unsubscribed: number;
+  wb_reminders_sent: string;
+  wb_attended: number;
+  wb_seq_status: string;
+  wb_seq_step: number;
+  wb_seq_next_at: string | null;
 };
 
 export type LeadInput = {
@@ -213,7 +243,7 @@ export function getLead(id: number): LeadRow | undefined {
   return db.prepare("SELECT * FROM leads WHERE id = ?").get(id) as LeadRow | undefined;
 }
 
-const ALLOWED_FIELDS = ["status", "temperature", "notes", "name", "church", "whatsapp", "city"] as const;
+const ALLOWED_FIELDS = ["status", "temperature", "notes", "name", "church", "whatsapp", "city", "wb_attended"] as const;
 export function updateLead(id: number, fields: Record<string, unknown>): LeadRow | undefined {
   const keys = Object.keys(fields).filter((k) => (ALLOWED_FIELDS as readonly string[]).includes(k));
   if (keys.length === 0) return getLead(id);
@@ -356,7 +386,7 @@ export function unsubscribeByEmail(email: string): boolean {
 export function countEnrollableLeads(): number {
   const r = db
     .prepare(
-      "SELECT COUNT(*) AS c FROM leads WHERE paid=0 AND unsubscribed=0 AND (seq_status='' OR seq_status='stopped')"
+      "SELECT COUNT(*) AS c FROM leads WHERE source != 'webinar' AND paid=0 AND unsubscribed=0 AND (seq_status='' OR seq_status='stopped')"
     )
     .get() as { c: number };
   return r.c;
@@ -369,7 +399,7 @@ export function enrollAllUnpaid(firstAt: string): number {
   const info = db
     .prepare(
       `UPDATE leads SET seq_status='active', seq_step=0, seq_next_at=@at, updated_at=@now
-       WHERE paid=0 AND unsubscribed=0 AND (seq_status='' OR seq_status='stopped')`
+       WHERE source != 'webinar' AND paid=0 AND unsubscribed=0 AND (seq_status='' OR seq_status='stopped')`
     )
     .run({ at: firstAt, now });
   return info.changes;
@@ -419,8 +449,9 @@ export function sequenceStats(): {
   const counts: Record<string, number> = {};
   for (const r of rows) counts[r.s] = r.c;
 
+  // step >= 0 excluye los correos del webinar (registrados con step = -1).
   const steps = db
-    .prepare("SELECT step, COUNT(*) AS c FROM email_log GROUP BY step")
+    .prepare("SELECT step, COUNT(*) AS c FROM email_log WHERE step >= 0 GROUP BY step")
     .all() as { step: number; c: number }[];
   const sentByStep: Record<number, number> = {};
   let totalSent = 0;
@@ -437,4 +468,115 @@ export function sequenceStats(): {
     sentByStep,
     totalSent,
   };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WEBINAR — datos aislados del pipeline del diagnóstico
+// ════════════════════════════════════════════════════════════════════════════
+
+// Todos los registrados del webinar (source='webinar').
+export function listWebinarLeads(): LeadRow[] {
+  return db
+    .prepare("SELECT * FROM leads WHERE source='webinar' ORDER BY datetime(created_at) DESC")
+    .all() as LeadRow[];
+}
+
+// ── Ajustes clave/valor (p. ej. link de YouTube del webinar) ──────────────────
+export function getSetting(key: string): string | null {
+  const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(key) as
+    | { value: string | null }
+    | undefined;
+  return r?.value ?? null;
+}
+export function setSetting(key: string, value: string): void {
+  db.prepare(
+    `INSERT INTO app_settings (key, value) VALUES (@key, @value)
+     ON CONFLICT(key) DO UPDATE SET value=@value`
+  ).run({ key, value });
+}
+
+// ── Plantillas editables de los correos del webinar (clave string) ────────────
+export function getWebinarTemplate(key: string): { subject: string; body: string } | undefined {
+  return db.prepare("SELECT subject, body FROM webinar_templates WHERE key=?").get(key) as
+    | { subject: string; body: string }
+    | undefined;
+}
+export function setWebinarTemplate(key: string, subject: string, body: string): void {
+  db.prepare(
+    `INSERT INTO webinar_templates (key, subject, body, updated_at)
+     VALUES (@key, @subject, @body, @now)
+     ON CONFLICT(key) DO UPDATE SET subject=@subject, body=@body, updated_at=@now`
+  ).run({ key, subject, body, now: new Date().toISOString() });
+}
+export function resetWebinarTemplate(key: string): void {
+  db.prepare("DELETE FROM webinar_templates WHERE key=?").run(key);
+}
+
+// ── Recordatorios anclados al evento (marca cuáles ya se enviaron) ─────────────
+export function getWebinarRemindersSent(lead: LeadRow): string[] {
+  if (!lead.wb_reminders_sent) return [];
+  try {
+    const arr = JSON.parse(lead.wb_reminders_sent);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+export function markWebinarReminderSent(leadId: number, key: string): void {
+  const lead = getLead(leadId);
+  if (!lead) return;
+  const sent = getWebinarRemindersSent(lead);
+  if (!sent.includes(key)) sent.push(key);
+  db.prepare("UPDATE leads SET wb_reminders_sent=@v, updated_at=@now WHERE id=@id").run({
+    id: leadId,
+    v: JSON.stringify(sent),
+    now: new Date().toISOString(),
+  });
+}
+
+export function markWebinarAttended(leadId: number, attended: boolean): LeadRow | undefined {
+  db.prepare("UPDATE leads SET wb_attended=@a, updated_at=@now WHERE id=@id").run({
+    id: leadId,
+    a: attended ? 1 : 0,
+    now: new Date().toISOString(),
+  });
+  return getLead(leadId);
+}
+
+// ── Secuencia de venta POST-evento del webinar ────────────────────────────────
+export function setWebinarSequence(
+  leadId: number,
+  fields: { status?: string; step?: number; next_at?: string | null }
+): LeadRow | undefined {
+  const sets: string[] = [];
+  const params: Record<string, unknown> = { id: leadId, now: new Date().toISOString() };
+  if (fields.status !== undefined) { sets.push("wb_seq_status=@status"); params.status = fields.status; }
+  if (fields.step !== undefined) { sets.push("wb_seq_step=@step"); params.step = fields.step; }
+  if (fields.next_at !== undefined) { sets.push("wb_seq_next_at=@next_at"); params.next_at = fields.next_at; }
+  if (sets.length === 0) return getLead(leadId);
+  db.prepare(`UPDATE leads SET ${sets.join(", ")}, updated_at=@now WHERE id=@id`).run(params);
+  return getLead(leadId);
+}
+
+// Inscribe al registrado en la secuencia post-evento (si no es cliente aún).
+export function enrollWebinarSequence(leadId: number, firstAt: string): void {
+  const lead = getLead(leadId);
+  if (!lead || lead.paid || lead.unsubscribed) return;
+  if (lead.wb_seq_status === "active" || lead.wb_seq_status === "done") return;
+  db.prepare(
+    "UPDATE leads SET wb_seq_status='active', wb_seq_step=0, wb_seq_next_at=@at, updated_at=@now WHERE id=@id"
+  ).run({ id: leadId, at: firstAt, now: new Date().toISOString() });
+}
+
+// Registrados del webinar a los que ya toca el siguiente correo de venta.
+export function dueWebinarSeqLeads(nowIso: string): LeadRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM leads
+       WHERE source='webinar' AND wb_seq_status='active' AND paid=0 AND unsubscribed=0
+         AND status NOT IN ('cliente','ganado','perdido')
+         AND wb_seq_next_at IS NOT NULL AND wb_seq_next_at <= ?
+       ORDER BY wb_seq_next_at ASC LIMIT 20`
+    )
+    .all(nowIso) as LeadRow[];
 }
