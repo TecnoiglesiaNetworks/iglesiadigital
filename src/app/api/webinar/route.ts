@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/mailer";
-import { upsertLead, getLead } from "@/lib/db";
+import { upsertLead, getLead, markWebinarRegistered } from "@/lib/db";
 import { webinarNotifyEmail } from "@/emails/webinar-template";
 import { sendWebinarEmail } from "@/lib/webinar-emails";
 
@@ -43,6 +43,10 @@ export async function POST(req: Request) {
       status: "registrado",
     });
     savedId = saved.id;
+    // Marca el registro al webinar (flag + etapa propios), aunque el lead ya
+    // existiera del diagnóstico. Así aparece en la pestaña Webinar sin salir
+    // del pipeline del diagnóstico.
+    markWebinarRegistered(saved.id);
   } catch (dbErr) {
     console.error("No se pudo guardar el registro del webinar:", dbErr);
   }

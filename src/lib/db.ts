@@ -108,6 +108,16 @@ function init(): Database.Database {
   if (!has("wb_seq_status")) addColumn("ALTER TABLE leads ADD COLUMN wb_seq_status TEXT NOT NULL DEFAULT ''");
   if (!has("wb_seq_step")) addColumn("ALTER TABLE leads ADD COLUMN wb_seq_step INTEGER NOT NULL DEFAULT 0");
   if (!has("wb_seq_next_at")) addColumn("ALTER TABLE leads ADD COLUMN wb_seq_next_at TEXT");
+  // Registro y etapa del webinar (independientes del pipeline del diagnóstico,
+  // para que un mismo lead pueda estar en ambos embudos).
+  if (!has("wb_registered")) addColumn("ALTER TABLE leads ADD COLUMN wb_registered INTEGER NOT NULL DEFAULT 0");
+  if (!has("wb_status")) addColumn("ALTER TABLE leads ADD COLUMN wb_status TEXT NOT NULL DEFAULT ''");
+  // Backfill: registros del webinar creados antes del flag (source='webinar').
+  try {
+    db.exec(
+      "UPDATE leads SET wb_registered=1, wb_status='registrado' WHERE source='webinar' AND wb_registered=0"
+    );
+  } catch {}
 
   return db;
 }
@@ -147,6 +157,8 @@ export type LeadRow = {
   wb_seq_status: string;
   wb_seq_step: number;
   wb_seq_next_at: string | null;
+  wb_registered: number;
+  wb_status: string;
 };
 
 export type LeadInput = {
@@ -243,7 +255,7 @@ export function getLead(id: number): LeadRow | undefined {
   return db.prepare("SELECT * FROM leads WHERE id = ?").get(id) as LeadRow | undefined;
 }
 
-const ALLOWED_FIELDS = ["status", "temperature", "notes", "name", "church", "whatsapp", "city", "wb_attended"] as const;
+const ALLOWED_FIELDS = ["status", "temperature", "notes", "name", "church", "whatsapp", "city", "wb_attended", "wb_status"] as const;
 export function updateLead(id: number, fields: Record<string, unknown>): LeadRow | undefined {
   const keys = Object.keys(fields).filter((k) => (ALLOWED_FIELDS as readonly string[]).includes(k));
   if (keys.length === 0) return getLead(id);
@@ -474,11 +486,24 @@ export function sequenceStats(): {
 //  WEBINAR — datos aislados del pipeline del diagnóstico
 // ════════════════════════════════════════════════════════════════════════════
 
-// Todos los registrados del webinar (source='webinar').
+// Todos los registrados del webinar (marcados con wb_registered=1, sin importar
+// su source, para que un lead del diagnóstico que también se registra aparezca).
 export function listWebinarLeads(): LeadRow[] {
   return db
-    .prepare("SELECT * FROM leads WHERE source='webinar' ORDER BY datetime(created_at) DESC")
+    .prepare("SELECT * FROM leads WHERE wb_registered=1 ORDER BY datetime(created_at) DESC")
     .all() as LeadRow[];
+}
+
+// Marca a un lead como registrado al webinar (nuevo o existente). Conserva su
+// etapa del webinar si ya la tenía; si no, lo pone en "registrado".
+export function markWebinarRegistered(leadId: number): void {
+  db.prepare(
+    `UPDATE leads SET
+       wb_registered = 1,
+       wb_status = CASE WHEN wb_status = '' THEN 'registrado' ELSE wb_status END,
+       updated_at = @now
+     WHERE id = @id`
+  ).run({ id: leadId, now: new Date().toISOString() });
 }
 
 // ── Ajustes clave/valor (p. ej. link de YouTube del webinar) ──────────────────
@@ -573,8 +598,8 @@ export function dueWebinarSeqLeads(nowIso: string): LeadRow[] {
   return db
     .prepare(
       `SELECT * FROM leads
-       WHERE source='webinar' AND wb_seq_status='active' AND paid=0 AND unsubscribed=0
-         AND status NOT IN ('cliente','ganado','perdido')
+       WHERE wb_registered=1 AND wb_seq_status='active' AND paid=0 AND unsubscribed=0
+         AND wb_status NOT IN ('cliente','perdido')
          AND wb_seq_next_at IS NOT NULL AND wb_seq_next_at <= ?
        ORDER BY wb_seq_next_at ASC LIMIT 20`
     )

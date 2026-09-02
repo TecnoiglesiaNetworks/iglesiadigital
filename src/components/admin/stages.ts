@@ -73,4 +73,7 @@ export type Lead = {
   seq_step: number;
   seq_next_at: string | null;
   unsubscribed: number;
+  wb_registered: number;
+  wb_status: string;
+  wb_attended: number;
 };

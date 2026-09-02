@@ -66,9 +66,13 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let out = leads.filter((l) => {
-      // Separa los dos embudos por origen del lead.
-      const isWebinar = l.source === "webinar";
-      if (mode === "webinar" ? !isWebinar : isWebinar) return false;
+      // Webinar: registrados (wb_registered). Diagnóstico: leads que no son
+      // exclusivos de webinar. Un lead puede estar en ambos embudos.
+      if (mode === "webinar") {
+        if (l.wb_registered !== 1) return false;
+      } else {
+        if (l.source === "webinar") return false;
+      }
       if (calendlyOnly && !l.scheduled_at) return false;
       if (!q) return true;
       return (
@@ -86,12 +90,15 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
     return out;
   }, [leads, search, calendlyOnly, sort, mode]);
 
+  // En modo webinar usamos wb_status (etapa propia del webinar); en diagnóstico, status.
+  const stageOf = (l: Lead) => (mode === "webinar" ? l.wb_status || "registrado" : l.status);
+
   const byStage = useMemo(() => {
     const map: Record<string, Lead[]> = {};
     for (const s of activeStages) map[s.id] = [];
-    for (const l of filtered) (map[l.status] ??= []).push(l);
+    for (const l of filtered) (map[stageOf(l)] ??= []).push(l);
     return map;
-  }, [filtered, activeStages]);
+  }, [filtered, activeStages, mode]);
 
   // ── Acciones ────────────────────────────────────────────────────────────
   async function refresh() {
@@ -161,7 +168,10 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   function onDrop(stage: string) {
     if (dragId == null) return;
     const lead = leads.find((l) => l.id === dragId);
-    if (lead && lead.status !== stage) patchLead(dragId, { status: stage });
+    if (lead && stageOf(lead) !== stage) {
+      // En webinar movemos wb_status; en diagnóstico, status.
+      patchLead(dragId, mode === "webinar" ? { wb_status: stage } : { status: stage });
+    }
     setDragId(null);
     setOverStage(null);
   }

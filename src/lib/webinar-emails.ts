@@ -316,7 +316,7 @@ export function eventEnd(): number {
   return eventStart() + WEBINAR.durationMin * 60_000;
 }
 function isConverted(l: LeadRow): boolean {
-  return Boolean(l.paid) || ["cliente", "ganado", "perdido"].includes(l.status);
+  return Boolean(l.paid) || ["cliente", "perdido"].includes(l.wb_status);
 }
 
 // ── Procesador (lo llama el cron) ─────────────────────────────────────────────
