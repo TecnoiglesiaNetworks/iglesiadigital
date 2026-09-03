@@ -3,16 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle, CheckCircle2 } from "lucide-react";
 
-/* Paso 2 del registro al webinar: unirse al grupo de WhatsApp. 10 s después de
+/* Paso 2 del registro al webinar: unirse al grupo de WhatsApp. 15 s después de
    montarse (formulario ya enviado) muestra "registro completo", den o no clic. */
 export function Step2Card({ whatsappUrl, joinImage }: { whatsappUrl: string; joinImage: string }) {
   const [joined, setJoined] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   function startTimer() {
     if (timerRef.current) return; // no reinicia si ya está corriendo
-    timerRef.current = setTimeout(() => setJoined(true), 10000);
+    timerRef.current = setTimeout(() => setJoined(true), 15000);
   }
-  // Arranca solo al montar (10 s tras enviar el formulario).
+  // Arranca solo al montar (15 s tras enviar el formulario).
   useEffect(() => {
     startTimer();
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
