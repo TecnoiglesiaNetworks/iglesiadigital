@@ -348,6 +348,11 @@ export async function sendWebinarEmail(
 }
 
 // Envía la invitación de UN webinar a un lote de leads y los marca invitados.
+// Pausa entre correos para no rebasar el límite de envío de Resend (unos pocos
+// por segundo) ni parecer un pico sospechoso. ~700 ms ≈ 1.4 correos/seg.
+const INVITE_DELAY_MS = 700;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function sendInviteBatch(
   cfg: WebinarConfig,
   leads: LeadRow[],
@@ -356,7 +361,8 @@ export async function sendInviteBatch(
   let sent = 0;
   let errors = 0;
   const reason = "hiciste el diagnóstico digital de tu iglesia";
-  for (const lead of leads) {
+  for (let i = 0; i < leads.length; i++) {
+    const lead = leads[i];
     try {
       await sendWebinarEmail(lead, "invite", { cfg, reason });
       onSent(lead.id);
@@ -365,6 +371,8 @@ export async function sendInviteBatch(
       console.error("[webinar] error invitando a", lead.email, e);
       errors++;
     }
+    // Pausa entre envíos (no tras el último) para ritmo seguro.
+    if (i < leads.length - 1) await sleep(INVITE_DELAY_MS);
   }
   return { sent, errors };
 }

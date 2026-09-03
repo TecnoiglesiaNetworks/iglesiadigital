@@ -32,7 +32,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   } catch {
     // sin cuerpo → lote por defecto
   }
-  const batch = Math.min(Math.max(body.batchSize ?? 60, 1), 200);
+  // Lote pequeño: con la pausa entre envíos (~700 ms) cada request termina en
+  // ~15 s, sin timeouts del proxy. El cliente repite hasta agotar los elegibles.
+  const batch = Math.min(Math.max(body.batchSize ?? 20, 1), 50);
   const cfg = configForWebinar(webinar);
 
   try {
