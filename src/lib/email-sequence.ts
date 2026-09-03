@@ -57,6 +57,18 @@ function webLink(text: string, url: string) {
   return `<div style="text-align:center;margin:16px 0"><a href="${url}" style="color:#6A3DE8;font-weight:600;text-decoration:underline;font-size:14.5px">${text}</a></div>`;
 }
 
+// Texto de vista previa (preheader): primera línea de texto real del correo,
+// sin markdown ni tokens de botón. Es lo que se ve en la bandeja junto al asunto.
+function preheaderFrom(text: string, l: LeadRow) {
+  const lines = text
+    .split("\n")
+    .map((x) => x.trim())
+    .filter((x) => x && !/^\[[A-Z]/i.test(x)); // sin líneas de botón
+  // Salta el saludo ("Hola ...") y toma la primera línea con contenido real.
+  const line = lines.find((x) => !/^¡?hola\b/i.test(x)) || lines[0] || "";
+  return sub(line.replace(/\*\*(.+?)\*\*/g, "$1"), l);
+}
+
 function renderBodyHtml(text: string, l: LeadRow) {
   const lines = text.split("\n").map((x) => x.trim()).filter(Boolean);
   const parts = lines.map((line) => {
@@ -68,11 +80,18 @@ function renderBodyHtml(text: string, l: LeadRow) {
     if (web) return webLink(esc(sub(web[1] || "Escríbenos por el chat del sitio", l)), BASE);
     return `<p style="${pStyle}">${inline(line, l)}</p>`;
   });
-  return shell(parts.join(""), unsubUrl(l.email));
+  return shell(parts.join(""), unsubUrl(l.email), preheaderFrom(text, l));
 }
 
-function shell(inner: string, unsubscribeLink: string) {
+function preheader(text: string) {
+  // Oculto en el cuerpo pero visible en la vista previa de la bandeja.
+  return `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f4f5fb;opacity:0">${esc(text)}</div>
+  <div style="display:none;max-height:0;overflow:hidden">&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>`;
+}
+
+function shell(inner: string, unsubscribeLink: string, pre = "") {
   return `<!DOCTYPE html><html><body style="margin:0;background:#f4f5fb;font-family:Arial,Helvetica,sans-serif">
+  ${pre ? preheader(pre) : ""}
   <div style="max-width:560px;margin:0 auto;padding:24px">
     <div style="background:#150F2E;border-radius:18px 18px 0 0;padding:22px;text-align:center">
       <div style="color:#FF5001;font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:700">Iglesia Digital</div>

@@ -95,12 +95,31 @@ function renderBodyHtml(text: string, l: LeadRow, cfg?: WebinarConfig, reason?: 
     if (off) return button(esc(subVars(off[1] || "Inscribirme al curso →", l, c)), offerUrl(l), "#FF5001");
     return `<p style="${pStyle}">${inline(line, l, c)}</p>`;
   });
-  return shell(parts.join(""), unsubUrl(l.email), c.title, reason);
+  return shell(parts.join(""), unsubUrl(l.email), c.title, reason, preheaderFrom(text, l, c));
 }
 
-function shell(inner: string, unsubscribeLink: string, title: string, reason?: string) {
+// Texto de vista previa (preheader): primera línea de texto real del correo,
+// sin markdown ni tokens de botón. Es lo que se ve en la bandeja junto al asunto.
+function preheaderFrom(text: string, l: LeadRow, cfg?: WebinarConfig) {
+  const lines = text
+    .split("\n")
+    .map((x) => x.trim())
+    .filter((x) => x && !/^\[[A-Z]/i.test(x)); // sin líneas de botón
+  // Salta el saludo ("¡Hola ...!") y toma la primera línea con contenido real.
+  const line = lines.find((x) => !/^¡?hola\b/i.test(x)) || lines[0] || "";
+  return subVars(line.replace(/\*\*(.+?)\*\*/g, "$1"), l, cfg);
+}
+
+function preheader(text: string) {
+  // Oculto en el cuerpo pero visible en la vista previa de la bandeja.
+  return `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f4f5fb;opacity:0">${esc(text)}</div>
+  <div style="display:none;max-height:0;overflow:hidden">&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>`;
+}
+
+function shell(inner: string, unsubscribeLink: string, title: string, reason?: string, pre = "") {
   const why = reason || "te registraste al webinar gratuito";
   return `<!DOCTYPE html><html><body style="margin:0;background:#f4f5fb;font-family:Arial,Helvetica,sans-serif">
+  ${pre ? preheader(pre) : ""}
   <div style="max-width:560px;margin:0 auto;padding:24px">
     <div style="background:#150F2E;border-radius:18px 18px 0 0;padding:22px;text-align:center">
       <div style="color:#FF5001;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700">Webinar · Iglesia Digital</div>
