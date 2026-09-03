@@ -1,15 +1,14 @@
 /* =====================================================================
-   Configuración EFECTIVA del webinar: mezcla los ajustes editables desde
-   el admin (nombre, fecha/hora, link de YouTube) sobre los valores por
-   defecto de webinar.ts, y calcula automáticamente las etiquetas humanas y
-   la tabla de horarios por país a partir de la fecha/hora elegida.
-
-   Solo servidor (usa la base de datos). El landing lo recibe por props.
+   Configuración EFECTIVA de un webinar: a partir de un registro de la tabla
+   `webinars` calcula las etiquetas humanas (fecha/hora) y la tabla de horarios
+   por país. Solo servidor.
    ===================================================================== */
-import { getSetting } from "./db";
 import { WEBINAR } from "./webinar";
+import { getActiveWebinar, type WebinarRow } from "./webinars-db";
 
 export type WebinarConfig = {
+  id: number;
+  slug: string;
   title: string;
   subtitle: string;
   startsAt: string;
@@ -23,7 +22,6 @@ export type WebinarConfig = {
   joinImage: string;
 };
 
-// Regiones para la tabla de horarios (zona IANA → se calcula la hora local).
 const REGIONS: { label: string; tz: string }[] = [
   { label: "🇲🇽 México (CDMX)", tz: "America/Mexico_City" },
   { label: "🇬🇹🇸🇻🇭🇳🇳🇮🇨🇷 Centroamérica", tz: "America/Guatemala" },
@@ -35,19 +33,13 @@ const REGIONS: { label: string; tz: string }[] = [
   { label: "🇨🇱🇦🇷🇺🇾 Chile · Argentina · Uruguay", tz: "America/Argentina/Buenos_Aires" },
   { label: "🇪🇸 España", tz: "Europe/Madrid" },
 ];
-
 const CDMX = "America/Mexico_City";
 
 function cap(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 function timeIn(d: Date, tz: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(d); // p. ej. "8:00 PM"
+  return new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit", hour12: true }).format(d);
 }
 function weekdayIn(d: Date, tz: string) {
   return new Intl.DateTimeFormat("es-MX", { timeZone: tz, weekday: "long" }).format(d);
@@ -63,31 +55,53 @@ export function dateLabelFor(startsAt: string): string {
 export function timeLabelFor(startsAt: string): string {
   return timeIn(new Date(startsAt), CDMX);
 }
-
 export function timesFor(startsAt: string): { region: string; time: string }[] {
   const d = new Date(startsAt);
   const baseWd = weekdayIn(d, CDMX);
   return REGIONS.map((r) => {
     let time = timeIn(d, r.tz);
     const wd = weekdayIn(d, r.tz);
-    if (wd !== baseWd) time += ` (${wd})`; // p. ej. España cae en miércoles
+    if (wd !== baseWd) time += ` (${wd})`;
     return { region: r.label, time };
   });
 }
 
-// Mezcla ajustes del admin sobre los valores por defecto.
-export function resolveWebinarConfig(): WebinarConfig {
-  const startsAt = getSetting("webinar_starts_at") || WEBINAR.startsAt;
+// Construye la config efectiva a partir de un registro de webinar.
+export function configForWebinar(w: WebinarRow): WebinarConfig {
   return {
-    title: getSetting("webinar_title") || WEBINAR.title,
-    subtitle: getSetting("webinar_subtitle") || WEBINAR.subtitle,
-    startsAt,
-    durationMin: WEBINAR.durationMin,
-    dateLabel: dateLabelFor(startsAt),
-    timeLabel: timeLabelFor(startsAt),
+    id: w.id,
+    slug: w.slug,
+    title: w.title,
+    subtitle: w.subtitle,
+    startsAt: w.starts_at,
+    durationMin: w.duration_min,
+    dateLabel: dateLabelFor(w.starts_at),
+    timeLabel: timeLabelFor(w.starts_at),
     timeZoneMain: WEBINAR.timeZoneMain,
-    times: timesFor(startsAt),
-    youtubeUrl: getSetting("webinar_youtube_url") || "",
+    times: timesFor(w.starts_at),
+    youtubeUrl: w.youtube_url,
+    whatsappGroupUrl: w.whatsapp_group_url,
+    joinImage: w.join_image || WEBINAR.joinImage,
+  };
+}
+
+// Config del webinar activo (el destacado que se muestra en /webinar).
+export function resolveWebinarConfig(): WebinarConfig {
+  const w = getActiveWebinar();
+  if (w) return configForWebinar(w);
+  // Respaldo (no debería ocurrir tras la migración inicial).
+  return {
+    id: 0,
+    slug: "webinar",
+    title: WEBINAR.title,
+    subtitle: WEBINAR.subtitle,
+    startsAt: WEBINAR.startsAt,
+    durationMin: WEBINAR.durationMin,
+    dateLabel: dateLabelFor(WEBINAR.startsAt),
+    timeLabel: timeLabelFor(WEBINAR.startsAt),
+    timeZoneMain: WEBINAR.timeZoneMain,
+    times: timesFor(WEBINAR.startsAt),
+    youtubeUrl: "",
     whatsappGroupUrl: WEBINAR.whatsappGroupUrl,
     joinImage: WEBINAR.joinImage,
   };

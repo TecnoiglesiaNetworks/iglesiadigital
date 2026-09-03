@@ -240,9 +240,9 @@ export function WebinarLanding({ cfg }: { cfg: WebinarConfig }) {
         <div className="lg:sticky lg:top-24">
           <AnimatePresence mode="wait">
             {!done ? (
-              <RegistrationCard key="form" onDone={() => setDone(true)} />
+              <RegistrationCard key="form" slug={cfg.slug} onDone={() => setDone(true)} />
             ) : (
-              <Step2Card key="step2" />
+              <Step2Card key="step2" whatsappUrl={cfg.whatsappGroupUrl} joinImage={cfg.joinImage} />
             )}
           </AnimatePresence>
         </div>
@@ -350,7 +350,7 @@ export function WebinarLanding({ cfg }: { cfg: WebinarConfig }) {
 }
 
 /* ── Tarjeta de registro ───────────────────────────────────────── */
-function RegistrationCard({ onDone }: { onDone: () => void }) {
+function RegistrationCard({ slug, onDone }: { slug: string; onDone: () => void }) {
   const [form, setForm] = useState({ name: "", email: "", whatsapp: "", city: "" });
   const [countryIso, setCountryIso] = useState("");
   const [countries, setCountries] = useState<CountryOpt[]>([]);
@@ -398,7 +398,7 @@ function RegistrationCard({ onDone }: { onDone: () => void }) {
       await fetch("/api/webinar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, city }),
+        body: JSON.stringify({ ...form, city, slug }),
       });
     } catch (err) {
       console.error("No se pudo registrar:", err);
@@ -490,7 +490,7 @@ function WField({
 }
 
 /* ── Paso 2: unirse al grupo de WhatsApp ───────────────────────── */
-function Step2Card() {
+function Step2Card({ whatsappUrl, joinImage }: { whatsappUrl: string; joinImage: string }) {
   // Al tocar el grupo (imagen o botón) arrancamos un temporizador: ~10 s después
   // (tiempo de unirse en WhatsApp) mostramos "registro completo" al volver.
   const [joined, setJoined] = useState(false);
@@ -535,7 +535,7 @@ function Step2Card() {
         </p>
 
         <a
-          href={WEBINAR.whatsappGroupUrl}
+          href={whatsappUrl}
           target="_blank"
           rel="noopener"
           className="mt-5 inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-good underline underline-offset-2"
@@ -582,7 +582,7 @@ function Step2Card() {
 
       {/* Imagen guía: cómo unirse (también clickeable al grupo). */}
       <a
-        href={WEBINAR.whatsappGroupUrl}
+        href={whatsappUrl}
         target="_blank"
         rel="noopener"
         onClick={markJoining}
@@ -591,7 +591,7 @@ function Step2Card() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={WEBINAR.joinImage}
+          src={joinImage}
           alt="Cómo unirte al grupo de WhatsApp"
           className="w-full"
           onError={(e) => {
@@ -601,7 +601,7 @@ function Step2Card() {
       </a>
 
       <a
-        href={WEBINAR.whatsappGroupUrl}
+        href={whatsappUrl}
         target="_blank"
         rel="noopener"
         onClick={markJoining}

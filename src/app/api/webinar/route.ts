@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/mailer";
-import { upsertLead, getLead, markWebinarRegistered } from "@/lib/db";
+import { upsertLead, getLead } from "@/lib/db";
+import { getWebinarBySlug, getActiveWebinar, registerForWebinar } from "@/lib/webinars-db";
+import { configForWebinar } from "@/lib/webinar-config";
 import { webinarNotifyEmail } from "@/emails/webinar-template";
 import { sendWebinarEmail } from "@/lib/webinar-emails";
 
@@ -12,6 +14,7 @@ type Body = {
   whatsapp?: string;
   church?: string;
   city?: string;
+  slug?: string;
 };
 
 export async function POST(req: Request) {
@@ -22,10 +25,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
 
-  const { name, email, whatsapp, church, city } = body;
+  const { name, email, whatsapp, church, city, slug } = body;
   if (!name?.trim() || !email?.trim()) {
     return NextResponse.json({ ok: false, error: "Faltan nombre o correo" }, { status: 422 });
   }
+
+  // Resolvemos a qué webinar se está registrando (por slug del landing, o el activo).
+  const webinar = (slug ? getWebinarBySlug(slug) : undefined) || getActiveWebinar();
+  if (!webinar) {
+    return NextResponse.json({ ok: false, error: "No hay webinar disponible" }, { status: 404 });
+  }
+  const cfg = configForWebinar(webinar);
 
   const cleanEmail = email.trim().toLowerCase();
 
@@ -43,10 +53,9 @@ export async function POST(req: Request) {
       status: "registrado",
     });
     savedId = saved.id;
-    // Marca el registro al webinar (flag + etapa propios), aunque el lead ya
-    // existiera del diagnóstico. Así aparece en la pestaña Webinar sin salir
-    // del pipeline del diagnóstico.
-    markWebinarRegistered(saved.id);
+    // Registra al lead a ESTE webinar (tabla webinar_registrations). Aunque el
+    // lead ya existiera del diagnóstico, aparece en la pestaña de este webinar.
+    registerForWebinar(webinar.id, saved.id);
   } catch (dbErr) {
     console.error("No se pudo guardar el registro del webinar:", dbErr);
   }
@@ -55,10 +64,10 @@ export async function POST(req: Request) {
   const notify = "pedro@tecnoiglesia.com";
 
   try {
-    // 1) Confirmación al registrado (plantilla editable 'confirm').
+    // 1) Confirmación al registrado (plantilla editable 'confirm') con la config de este webinar.
     const lead = savedId ? getLead(savedId) : undefined;
     if (lead) {
-      await sendWebinarEmail(lead, "confirm");
+      await sendWebinarEmail(lead, "confirm", { cfg });
     }
 
     // 2) Aviso interno al equipo.
@@ -66,7 +75,7 @@ export async function POST(req: Request) {
       await sendEmail({
         to: notify,
         replyTo: cleanEmail,
-        subject: `Registro webinar · ${name.trim()}`,
+        subject: `Registro webinar · ${cfg.title} · ${name.trim()}`,
         html: webinarNotifyEmail({ name: name.trim(), email: cleanEmail, whatsapp, church, city }),
       });
     }

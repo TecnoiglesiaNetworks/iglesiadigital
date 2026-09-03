@@ -12,35 +12,23 @@
    viven los textos por defecto y el renderizador al HTML de marca.
    ===================================================================== */
 import { sendEmail, mailerReady } from "./mailer";
+import { getWebinarTemplate, logSequenceEmail, getLead, type LeadRow } from "./db";
 import {
-  listWebinarLeads,
-  getWebinarTemplate,
-  getWebinarRemindersSent,
-  markWebinarReminderSent,
-  enrollWebinarSequence,
-  dueWebinarSeqLeads,
-  setWebinarSequence,
-  logSequenceEmail,
-  getSetting,
-  countInviteEligible,
-  nextInviteBatch,
-  markInvited,
-  type LeadRow,
-} from "./db";
+  listWebinars,
+  registrationsForWebinar,
+  regRemindersSent,
+  markRegReminderSent,
+  setRegSequence,
+  dueRegSeq,
+} from "./webinars-db";
 import { unsubUrl } from "./unsubscribe";
-import { WEBINAR } from "./webinar";
-import { resolveWebinarConfig, type WebinarConfig } from "./webinar-config";
+import { resolveWebinarConfig, configForWebinar, type WebinarConfig } from "./webinar-config";
 
 const BASE = process.env.PUBLIC_BASE_URL || "https://iglesiadigital.net";
 const OFFER_PATH = "/oferta";
 const POSTAL =
   process.env.LEAD_POSTAL_ADDRESS ||
   "Agua Azul #903 Int. Ab81, Col. Jardines del Moral, CP 37160, León, Guanajuato, México";
-
-// Link de YouTube del evento: se toma del ajuste editable en el admin.
-export function youtubeUrl(): string {
-  return getSetting("webinar_youtube_url") || "";
-}
 
 // ── Helpers de personalización ────────────────────────────────────────────────
 function first(l: LeadRow) {
@@ -314,57 +302,49 @@ export function webinarPreview(key: string) {
   };
 }
 
-// Envía un correo del webinar a un lead usando su plantilla (por clave).
-// `reason` cambia el pie de correo (para la invitación a leads del diagnóstico).
-export async function sendWebinarEmail(lead: LeadRow, key: string, reason?: string): Promise<void> {
+// Envía un correo del webinar a un lead usando su plantilla (por clave) y la
+// config de ESE webinar. `reason` cambia el pie de correo (para invitaciones).
+export async function sendWebinarEmail(
+  lead: LeadRow,
+  key: string,
+  opts?: { cfg?: WebinarConfig; reason?: string }
+): Promise<void> {
+  const cfg = opts?.cfg ?? resolveWebinarConfig();
   const tpl = webinarTemplateFor(key);
-  const subject = subVars(tpl.subject, lead);
+  const subject = subVars(tpl.subject, lead, cfg);
   await sendEmail({
     to: lead.email,
     subject,
-    html: renderBodyHtml(tpl.body, lead, undefined, reason),
+    html: renderBodyHtml(tpl.body, lead, cfg, opts?.reason),
     replyTo: "contacto@tecnoiglesia.com",
     listUnsubscribe: unsubUrl(lead.email),
   });
-  // step -1 para diferenciar los correos del webinar en el historial.
   logSequenceEmail(lead.id, -1, `[Webinar] ${subject}`);
 }
 
-// Envía la invitación al webinar a un lote de leads del diagnóstico y los marca
-// como invitados. Devuelve cuántos se enviaron, cuántos fallaron y cuántos quedan.
-export async function sendInviteBatch(batchSize = 60): Promise<{ sent: number; errors: number; remaining: number }> {
-  if (!mailerReady()) {
-    return { sent: 0, errors: 0, remaining: countInviteEligible() };
-  }
-  const leads = nextInviteBatch(batchSize);
+// Envía la invitación de UN webinar a un lote de leads y los marca invitados.
+export async function sendInviteBatch(
+  cfg: WebinarConfig,
+  leads: LeadRow[],
+  onSent: (leadId: number) => void
+): Promise<{ sent: number; errors: number }> {
   let sent = 0;
   let errors = 0;
   const reason = "hiciste el diagnóstico digital de tu iglesia";
   for (const lead of leads) {
     try {
-      await sendWebinarEmail(lead, "invite", reason);
-      markInvited(lead.id);
+      await sendWebinarEmail(lead, "invite", { cfg, reason });
+      onSent(lead.id);
       sent++;
     } catch (e) {
       console.error("[webinar] error invitando a", lead.email, e);
       errors++;
     }
   }
-  return { sent, errors, remaining: countInviteEligible() };
+  return { sent, errors };
 }
 
-// ── Momentos clave del evento ─────────────────────────────────────────────────
-export function eventStart(): number {
-  return new Date(resolveWebinarConfig().startsAt).getTime();
-}
-export function eventEnd(): number {
-  return eventStart() + WEBINAR.durationMin * 60_000;
-}
-function isConverted(l: LeadRow): boolean {
-  return Boolean(l.paid) || ["cliente", "perdido"].includes(l.wb_status);
-}
-
-// ── Procesador (lo llama el cron) ─────────────────────────────────────────────
+// ── Procesador (lo llama el cron): recorre TODOS los webinars ─────────────────
 export async function processWebinar(): Promise<{ reminders: number; sequence: number; errors: number }> {
   const now = Date.now();
   const nowIso = new Date(now).toISOString();
@@ -377,62 +357,64 @@ export async function processWebinar(): Promise<{ reminders: number; sequence: n
     return { reminders: 0, sequence: 0, errors: 0 };
   }
 
-  const start = eventStart();
-  const end = eventEnd();
+  for (const w of listWebinars()) {
+    const cfg = configForWebinar(w);
+    const start = new Date(cfg.startsAt).getTime();
+    const end = start + cfg.durationMin * 60_000;
 
-  // A) Recordatorios anclados al evento + inscripción a la secuencia post-evento.
-  for (const lead of listWebinarLeads()) {
-    if (lead.unsubscribed) continue;
-    if (isConverted(lead)) continue;
+    // A) Recordatorios anclados al evento + inscripción a la secuencia post-evento.
+    for (const reg of registrationsForWebinar(w.id)) {
+      if (["cliente", "perdido"].includes(reg.status)) continue;
+      const lead = getLead(reg.lead_id);
+      if (!lead || lead.unsubscribed || lead.paid) continue;
 
-    // Recordatorios cuya hora de envío ya pasó y no se han mandado.
-    const sent = getWebinarRemindersSent(lead);
-    for (const r of REMINDERS) {
-      if (r.key === "confirm") continue; // se envía en el registro, no por tiempo.
-      const sendAt = start - r.offsetMin * 60_000;
-      // Ventana: ya pasó su hora, aún no comienza el evento (con 5 min de gracia)
-      // y no se ha enviado.
-      if (now >= sendAt && now < start + 5 * 60_000 && !sent.includes(r.key)) {
-        try {
-          await sendWebinarEmail(lead, r.key);
-          markWebinarReminderSent(lead.id, r.key);
-          reminders++;
-        } catch (e) {
-          console.error("[webinar] error recordatorio", r.key, lead.email, e);
-          errors++;
+      const sent = regRemindersSent(reg.reminders_sent);
+      for (const r of REMINDERS) {
+        if (r.key === "confirm") continue; // se envía en el registro, no por tiempo.
+        const sendAt = start - r.offsetMin * 60_000;
+        if (now >= sendAt && now < start + 5 * 60_000 && !sent.includes(r.key)) {
+          try {
+            await sendWebinarEmail(lead, r.key, { cfg });
+            markRegReminderSent(reg.reg_id, r.key);
+            reminders++;
+          } catch (e) {
+            console.error("[webinar] error recordatorio", r.key, lead.email, e);
+            errors++;
+          }
         }
       }
-    }
 
-    // Al terminar el evento, inscribe en la secuencia de venta (una sola vez).
-    if (now >= end && lead.wb_seq_status === "") {
-      enrollWebinarSequence(lead.id, new Date(end).toISOString());
-    }
-  }
-
-  // B) Secuencia de venta post-evento (correos que ya tocan).
-  const due = dueWebinarSeqLeads(nowIso);
-  for (const lead of due) {
-    const i = lead.wb_seq_step;
-    const step = POST_SEQUENCE[i];
-    if (!step) {
-      setWebinarSequence(lead.id, { status: "done", next_at: null });
-      continue;
-    }
-    try {
-      await sendWebinarEmail(lead, step.key);
-      const nextIdx = i + 1;
-      if (nextIdx < POST_SEQUENCE.length) {
-        const nextAt = new Date(now + POST_SEQUENCE[nextIdx].afterHours * 3600_000).toISOString();
-        setWebinarSequence(lead.id, { status: "active", step: nextIdx, next_at: nextAt });
-      } else {
-        setWebinarSequence(lead.id, { status: "done", next_at: null });
+      // Al terminar el evento, inscribe en la secuencia de venta (una sola vez).
+      if (now >= end && reg.seq_status === "") {
+        setRegSequence(reg.reg_id, { status: "active", step: 0, next_at: new Date(end).toISOString() });
       }
-      sequence++;
-    } catch (e) {
-      console.error("[webinar] error secuencia", lead.email, e);
-      setWebinarSequence(lead.id, { next_at: new Date(now + 3600_000).toISOString() });
-      errors++;
+    }
+
+    // B) Secuencia de venta post-evento de este webinar.
+    for (const reg of dueRegSeq(w.id, nowIso)) {
+      const i = reg.seq_step;
+      const step = POST_SEQUENCE[i];
+      if (!step) {
+        setRegSequence(reg.reg_id, { status: "done", next_at: null });
+        continue;
+      }
+      const lead = getLead(reg.lead_id);
+      if (!lead) continue;
+      try {
+        await sendWebinarEmail(lead, step.key, { cfg });
+        const nextIdx = i + 1;
+        if (nextIdx < POST_SEQUENCE.length) {
+          const nextAt = new Date(now + POST_SEQUENCE[nextIdx].afterHours * 3600_000).toISOString();
+          setRegSequence(reg.reg_id, { status: "active", step: nextIdx, next_at: nextAt });
+        } else {
+          setRegSequence(reg.reg_id, { status: "done", next_at: null });
+        }
+        sequence++;
+      } catch (e) {
+        console.error("[webinar] error secuencia", lead.email, e);
+        setRegSequence(reg.reg_id, { next_at: new Date(now + 3600_000).toISOString() });
+        errors++;
+      }
     }
   }
 

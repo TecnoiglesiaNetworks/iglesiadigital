@@ -3,16 +3,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGroup, motion } from "framer-motion";
 import {
-  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail, Radio, Send,
+  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { STAGES, WEBINAR_STAGES, STAGE_LABEL, TEMP_CLASS, type Lead } from "./stages";
+import { STAGES, STAGE_LABEL, TEMP_CLASS, type Lead } from "./stages";
 import { LeadDrawer } from "./LeadDrawer";
 import { AddLeadModal } from "./AddLeadModal";
 import { UsersModal } from "./UsersModal";
 import { IntegrationsModal } from "./IntegrationsModal";
 import { EmailsModal } from "./EmailsModal";
 import { WebinarModal } from "./WebinarModal";
+import { WebinarsPanel } from "./WebinarsPanel";
 
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
@@ -58,61 +59,16 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const [overStage, setOverStage] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
-  // Invitación masiva al webinar (desde la vista Diagnóstico).
-  const [inviteEligible, setInviteEligible] = useState<number | null>(null);
-  const [inviting, setInviting] = useState(false);
-  const [inviteMsg, setInviteMsg] = useState("");
-
-  useEffect(() => {
-    fetch("/api/admin/webinar/invite")
-      .then((r) => r.json())
-      .then((d) => d?.ok && setInviteEligible(d.eligible))
-      .catch(() => {});
-  }, []);
-
-  async function inviteToWebinar() {
-    const total = inviteEligible ?? 0;
-    if (total <= 0) return;
-    if (!confirm(`Vas a invitar al webinar a ${total} lead(s) del diagnóstico (por correo). ¿Continuar?`)) return;
-    setInviting(true);
-    setInviteMsg("Enviando invitaciones…");
-    let sentTotal = 0;
-    try {
-      // Envía por lotes hasta agotar los elegibles.
-      for (let i = 0; i < 100; i++) {
-        const res = await fetch("/api/admin/webinar/invite", { method: "POST" });
-        const d = await res.json().catch(() => ({}));
-        if (!d?.ok) {
-          setInviteMsg(d?.error || "No se pudo enviar");
-          break;
-        }
-        sentTotal += d.sent || 0;
-        setInviteEligible(d.remaining ?? 0);
-        setInviteMsg(`Enviadas ${sentTotal}… (quedan ${d.remaining ?? 0})`);
-        if ((d.remaining ?? 0) <= 0 || (d.sent ?? 0) === 0) break;
-      }
-      setInviteMsg(`✅ Invitaciones enviadas: ${sentTotal}`);
-    } catch {
-      setInviteMsg("Error de conexión al enviar");
-    } finally {
-      setInviting(false);
-    }
-  }
 
   // ── Datos derivados ─────────────────────────────────────────────────────
-  // Columnas activas según el modo (diagnóstico vs webinar).
-  const activeStages = mode === "webinar" ? WEBINAR_STAGES : STAGES;
+  // Columnas del diagnóstico (el webinar tiene su propio panel).
+  const activeStages = STAGES;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let out = leads.filter((l) => {
-      // Webinar: registrados (wb_registered). Diagnóstico: leads que no son
-      // exclusivos de webinar. Un lead puede estar en ambos embudos.
-      if (mode === "webinar") {
-        if (l.wb_registered !== 1) return false;
-      } else {
-        if (l.source === "webinar") return false;
-      }
+      // Diagnóstico: leads que no son exclusivos de webinar.
+      if (l.source === "webinar") return false;
       if (calendlyOnly && !l.scheduled_at) return false;
       if (!q) return true;
       return (
@@ -128,17 +84,16 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
       return sort === "recent" ? db - da : da - db;
     });
     return out;
-  }, [leads, search, calendlyOnly, sort, mode]);
+  }, [leads, search, calendlyOnly, sort]);
 
-  // En modo webinar usamos wb_status (etapa propia del webinar); en diagnóstico, status.
-  const stageOf = (l: Lead) => (mode === "webinar" ? l.wb_status || "registrado" : l.status);
+  const stageOf = (l: Lead) => l.status;
 
   const byStage = useMemo(() => {
     const map: Record<string, Lead[]> = {};
     for (const s of activeStages) map[s.id] = [];
     for (const l of filtered) (map[stageOf(l)] ??= []).push(l);
     return map;
-  }, [filtered, activeStages, mode]);
+  }, [filtered, activeStages]);
 
   // ── Acciones ────────────────────────────────────────────────────────────
   async function refresh() {
@@ -209,8 +164,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
     if (dragId == null) return;
     const lead = leads.find((l) => l.id === dragId);
     if (lead && stageOf(lead) !== stage) {
-      // En webinar movemos wb_status; en diagnóstico, status.
-      patchLead(dragId, mode === "webinar" ? { wb_status: stage } : { status: stage });
+      patchLead(dragId, { status: stage });
     }
     setDragId(null);
     setOverStage(null);
@@ -252,29 +206,33 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
               onClick={() => setWebinarOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
             >
-              <Radio size={15} /> Config. webinar
+              <Mail size={15} /> Correos del webinar
             </button>
           )}
-          <button
-            onClick={() => setAddOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
-          >
-            <Plus size={16} /> Agregar lead
-          </button>
-          <div className="flex overflow-hidden rounded-lg border border-slate-200">
-            <button
-              onClick={() => setView("kanban")}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium ${view === "kanban" ? "bg-violet-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-            >
-              <LayoutGrid size={15} /> Kanban
-            </button>
-            <button
-              onClick={() => setView("tabla")}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium ${view === "tabla" ? "bg-violet-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-            >
-              <Table2 size={15} /> Tabla
-            </button>
-          </div>
+          {mode !== "webinar" && (
+            <>
+              <button
+                onClick={() => setAddOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+              >
+                <Plus size={16} /> Agregar lead
+              </button>
+              <div className="flex overflow-hidden rounded-lg border border-slate-200">
+                <button
+                  onClick={() => setView("kanban")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium ${view === "kanban" ? "bg-violet-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                >
+                  <LayoutGrid size={15} /> Kanban
+                </button>
+                <button
+                  onClick={() => setView("tabla")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium ${view === "tabla" ? "bg-violet-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                >
+                  <Table2 size={15} /> Tabla
+                </button>
+              </div>
+            </>
+          )}
           <a
             href="/admin/reportes"
             title="Reportes"
@@ -313,6 +271,10 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
         </div>
       </header>
 
+      {mode === "webinar" ? (
+        <WebinarsPanel />
+      ) : (
+      <>
       {/* Barra de herramientas */}
       <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-5 py-3">
         <div className="relative">
@@ -325,18 +287,16 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
           />
         </div>
 
-        {mode !== "webinar" && (
-          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
-            <input
-              type="checkbox"
-              checked={calendlyOnly}
-              onChange={(e) => setCalendlyOnly(e.target.checked)}
-              className="peer sr-only"
-            />
-            <span className="relative h-5 w-9 rounded-full bg-slate-300 transition-colors peer-checked:bg-violet-600 after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-4" />
-            Solo con cita Calendly
-          </label>
-        )}
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={calendlyOnly}
+            onChange={(e) => setCalendlyOnly(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span className="relative h-5 w-9 rounded-full bg-slate-300 transition-colors peer-checked:bg-violet-600 after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-4" />
+          Solo con cita Calendly
+        </label>
 
         <label className="ml-auto inline-flex items-center gap-2 text-sm text-slate-600">
           Orden:
@@ -351,30 +311,15 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
           </select>
         </label>
 
-        {mode !== "webinar" && (
-          <button
-            onClick={syncCalendly}
-            disabled={syncing}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-          >
-            {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            Sincronizar Calendly
-          </button>
-        )}
-        {mode !== "webinar" && (
-          <button
-            onClick={inviteToWebinar}
-            disabled={inviting || (inviteEligible ?? 0) <= 0}
-            title="Enviar por correo la invitación al webinar a los leads del diagnóstico"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
-          >
-            {inviting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-            Invitar al webinar{inviteEligible != null ? ` (${inviteEligible})` : ""}
-          </button>
-        )}
-        {mode !== "webinar" && (syncMsg || inviteMsg) && (
-          <span className="text-xs text-slate-500">{inviteMsg || syncMsg}</span>
-        )}
+        <button
+          onClick={syncCalendly}
+          disabled={syncing}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+        >
+          {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          Sincronizar Calendly
+        </button>
+        {syncMsg && <span className="text-xs text-slate-500">{syncMsg}</span>}
       </div>
 
       {/* Contenido */}
@@ -440,6 +385,8 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
         </LayoutGroup>
       ) : (
         <TableView leads={filtered} onOpen={setSelected} onDelete={removeLead} />
+      )}
+      </>
       )}
 
       {selected && (

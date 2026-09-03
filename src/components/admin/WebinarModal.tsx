@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { X, Radio, Loader2, Eye, EyeOff, Pencil, Save, RotateCcw, Youtube, Check, CalendarClock } from "lucide-react";
+import { X, Mail, Loader2, Eye, EyeOff, Pencil, Save, RotateCcw } from "lucide-react";
 
 type Tpl = {
   key: string;
@@ -23,37 +23,16 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({ subject: "", body: "" });
   const [saving, setSaving] = useState(false);
 
-  const [ytUrl, setYtUrl] = useState("");
-  const [ytSaving, setYtSaving] = useState(false);
-  const [ytSaved, setYtSaved] = useState(false);
-
-  // Datos del webinar (nombre, subtítulo, fecha/hora).
-  const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
-  const [startsAtLocal, setStartsAtLocal] = useState("");
-  const [whenLabel, setWhenLabel] = useState("");
-  const [datosSaving, setDatosSaving] = useState(false);
-  const [datosSaved, setDatosSaved] = useState(false);
-
   useEffect(() => {
     let alive = true;
-    Promise.all([
-      fetch("/api/admin/webinar/templates").then((r) => r.json()),
-      fetch("/api/admin/webinar/settings").then((r) => r.json()),
-    ])
-      .then(([tpls, settings]) => {
+    fetch("/api/admin/webinar/templates")
+      .then((r) => r.json())
+      .then((tpls) => {
         if (!alive) return;
         if (tpls?.ok) {
           setReminders(tpls.reminders || []);
           setSequence(tpls.sequence || []);
           setInvite(tpls.invite || []);
-        }
-        if (settings?.ok) {
-          setYtUrl(settings.youtubeUrl || "");
-          setTitle(settings.title || "");
-          setSubtitle(settings.subtitle || "");
-          setStartsAtLocal(settings.startsAtLocal || "");
-          setWhenLabel(`${settings.dateLabel || ""} · ${settings.timeLabel || ""}`);
         }
       })
       .finally(() => alive && setLoading(false));
@@ -61,43 +40,6 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
       alive = false;
     };
   }, []);
-
-  async function saveDatos() {
-    setDatosSaving(true);
-    setDatosSaved(false);
-    const res = await fetch("/api/admin/webinar/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, subtitle, startsAtLocal }),
-    });
-    const d = await res.json().catch(() => ({}));
-    setDatosSaving(false);
-    if (d?.ok) {
-      setWhenLabel(`${d.dateLabel || ""} · ${d.timeLabel || ""}`);
-      setDatosSaved(true);
-      setTimeout(() => setDatosSaved(false), 2500);
-    } else {
-      alert(d?.error || "No se pudo guardar");
-    }
-  }
-
-  async function saveYt() {
-    setYtSaving(true);
-    setYtSaved(false);
-    const res = await fetch("/api/admin/webinar/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ youtubeUrl: ytUrl.trim() }),
-    });
-    const d = await res.json().catch(() => ({}));
-    setYtSaving(false);
-    if (d?.ok) {
-      setYtSaved(true);
-      setTimeout(() => setYtSaved(false), 2500);
-    } else {
-      alert(d?.error || "No se pudo guardar el link");
-    }
-  }
 
   function startEdit(t: Tpl) {
     setEditing(t.key);
@@ -224,7 +166,7 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
-            <Radio size={18} /> Configuración del Webinar
+            <Mail size={18} /> Correos del Webinar
           </h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
             <X size={18} />
@@ -238,87 +180,14 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <>
-              {/* Datos del webinar: nombre y fecha/hora */}
-              <div className="mb-5 rounded-xl border border-violet-200 bg-violet-50/60 p-4">
-                <label className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold text-slate-700">
-                  <CalendarClock size={16} className="text-violet-600" /> Datos del webinar
-                </label>
-                <div className="space-y-2.5">
-                  <div>
-                    <span className="mb-1 block text-[12px] font-medium text-slate-500">Nombre del webinar</span>
-                    <input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="La Gran Comisión también es Digital"
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-violet-500"
-                    />
-                  </div>
-                  <div>
-                    <span className="mb-1 block text-[12px] font-medium text-slate-500">Subtítulo</span>
-                    <input
-                      value={subtitle}
-                      onChange={(e) => setSubtitle(e.target.value)}
-                      placeholder="Cómo usar Google, redes, publicidad e IA…"
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-violet-500"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                    <div className="flex-1">
-                      <span className="mb-1 block text-[12px] font-medium text-slate-500">Fecha y hora (CDMX)</span>
-                      <input
-                        type="datetime-local"
-                        value={startsAtLocal}
-                        onChange={(e) => setStartsAtLocal(e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-violet-500"
-                      />
-                    </div>
-                    <button
-                      onClick={saveDatos}
-                      disabled={datosSaving}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
-                    >
-                      {datosSaving ? <Loader2 size={14} className="animate-spin" /> : datosSaved ? <Check size={14} /> : <Save size={14} />}
-                      {datosSaved ? "Guardado" : "Guardar"}
-                    </button>
-                  </div>
-                </div>
-                {whenLabel.trim() !== "·" && (
-                  <p className="mt-2 text-[12px] text-slate-500">
-                    Se mostrará como: <b className="text-slate-700">{whenLabel}</b> (hora CDMX). Los horarios de otros países se recalculan solos.
-                  </p>
-                )}
-              </div>
-
-              {/* Link de YouTube */}
-              <div className="mb-6 rounded-xl border border-red-200 bg-red-50/60 p-4">
-                <label className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold text-slate-700">
-                  <Youtube size={16} className="text-red-600" /> Link de YouTube (se envía 30 min antes)
-                </label>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    value={ytUrl}
-                    onChange={(e) => setYtUrl(e.target.value)}
-                    placeholder="https://youtube.com/live/..."
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-red-400"
-                  />
-                  <button
-                    onClick={saveYt}
-                    disabled={ytSaving}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {ytSaving ? <Loader2 size={14} className="animate-spin" /> : ytSaved ? <Check size={14} /> : <Save size={14} />}
-                    {ytSaved ? "Guardado" : "Guardar"}
-                  </button>
-                </div>
-                <p className="mt-2 text-[12px] text-slate-500">
-                  Pon aquí el enlace del directo antes del evento. Si está vacío, el correo de las 30 min saldrá sin botón funcional.
-                </p>
-              </div>
+              <p className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[12.5px] text-slate-500">
+                Estos textos son <b>compartidos por todos los webinars</b>. Los datos de cada uno (nombre, fecha, link de YouTube) se toman del webinar correspondiente y se rellenan solos con <code>{"{fecha}"}</code>, <code>{"{hora}"}</code> y los botones.
+              </p>
 
               {/* Invitación (a leads del diagnóstico) */}
               <h3 className="mb-2 text-sm font-bold text-slate-700">Invitación al webinar</h3>
               <p className="mb-3 text-[12.5px] text-slate-500">
-                Este es el correo que se envía a los leads del diagnóstico cuando usas <b>“Invitar al webinar”</b>. Puedes editarlo.
+                Este es el correo que se envía a los leads cuando usas <b>“Invitar”</b> en un webinar. Puedes editarlo.
               </p>
               <div className="mb-7 space-y-3">{invite.map(renderCard)}</div>
 

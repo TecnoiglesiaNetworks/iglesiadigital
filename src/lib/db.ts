@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { existsSync, mkdirSync } from "fs";
 import path from "path";
+import { WEBINAR } from "./webinar";
 
 // ── Ubicación del archivo SQLite ────────────────────────────────────────────
 // Se guarda en /data/leads.db (ignorado por git). Configurable con DB_PATH.
@@ -76,6 +77,45 @@ function init(): Database.Database {
       key   TEXT PRIMARY KEY,
       value TEXT
     );
+
+    -- ── Múltiples webinars ────────────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS webinars (
+      id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug               TEXT NOT NULL UNIQUE,
+      title              TEXT NOT NULL,
+      subtitle           TEXT NOT NULL DEFAULT '',
+      starts_at          TEXT NOT NULL,
+      duration_min       INTEGER NOT NULL DEFAULT 90,
+      youtube_url        TEXT NOT NULL DEFAULT '',
+      whatsapp_group_url TEXT NOT NULL DEFAULT '',
+      join_image         TEXT NOT NULL DEFAULT '',
+      active             INTEGER NOT NULL DEFAULT 0,
+      created_at         TEXT NOT NULL
+    );
+
+    -- Un registro por (webinar, lead). Guarda el estado de ESA persona en ESE
+    -- webinar (etapa, asistencia, recordatorios y secuencia post-evento).
+    CREATE TABLE IF NOT EXISTS webinar_registrations (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      webinar_id     INTEGER NOT NULL,
+      lead_id        INTEGER NOT NULL,
+      status         TEXT NOT NULL DEFAULT 'registrado',
+      attended       INTEGER NOT NULL DEFAULT 0,
+      reminders_sent TEXT NOT NULL DEFAULT '',
+      seq_status     TEXT NOT NULL DEFAULT '',
+      seq_step       INTEGER NOT NULL DEFAULT 0,
+      seq_next_at    TEXT,
+      created_at     TEXT NOT NULL,
+      updated_at     TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_wbreg ON webinar_registrations(webinar_id, lead_id);
+
+    -- A quién ya se invitó a cada webinar (para no repetir).
+    CREATE TABLE IF NOT EXISTS webinar_invites (
+      webinar_id INTEGER NOT NULL,
+      lead_id    INTEGER NOT NULL,
+      PRIMARY KEY (webinar_id, lead_id)
+    );
   `);
 
   // Migración: columnas de pago (para bases creadas antes de esta versión).
@@ -120,6 +160,63 @@ function init(): Database.Database {
       "UPDATE leads SET wb_registered=1, wb_status='registrado' WHERE source='webinar' AND wb_registered=0"
     );
   } catch {}
+
+  // ── Migración a múltiples webinars ─────────────────────────────────────────
+  // Si aún no hay ningún webinar en la tabla, creamos el primero a partir de los
+  // ajustes actuales y migramos los registros/invitaciones existentes.
+  try {
+    const count = (db.prepare("SELECT COUNT(*) AS c FROM webinars").get() as { c: number }).c;
+    if (count === 0) {
+      const now = new Date().toISOString();
+      const get = (k: string) =>
+        (db.prepare("SELECT value FROM app_settings WHERE key=?").get(k) as { value: string } | undefined)?.value;
+      const info = db
+        .prepare(
+          `INSERT INTO webinars
+            (slug, title, subtitle, starts_at, duration_min, youtube_url, whatsapp_group_url, join_image, active, created_at)
+           VALUES (@slug,@title,@subtitle,@starts_at,@dur,@yt,@wa,@img,1,@now)`
+        )
+        .run({
+          slug: "la-gran-comision",
+          title: get("webinar_title") || WEBINAR.title,
+          subtitle: get("webinar_subtitle") || WEBINAR.subtitle,
+          starts_at: get("webinar_starts_at") || WEBINAR.startsAt,
+          dur: WEBINAR.durationMin,
+          yt: get("webinar_youtube_url") || "",
+          wa: WEBINAR.whatsappGroupUrl,
+          img: WEBINAR.joinImage,
+          now,
+        });
+      const wid = Number(info.lastInsertRowid);
+      // Migra los leads registrados al webinar → webinar_registrations.
+      const regs = db.prepare("SELECT * FROM leads WHERE wb_registered=1").all() as LeadRow[];
+      const insReg = db.prepare(
+        `INSERT OR IGNORE INTO webinar_registrations
+          (webinar_id, lead_id, status, attended, reminders_sent, seq_status, seq_step, seq_next_at, created_at, updated_at)
+         VALUES (@wid,@lid,@st,@att,@rem,@ss,@sstep,@snext,@ca,@ua)`
+      );
+      for (const l of regs) {
+        insReg.run({
+          wid,
+          lid: l.id,
+          st: l.wb_status || "registrado",
+          att: l.wb_attended || 0,
+          rem: l.wb_reminders_sent || "",
+          ss: l.wb_seq_status || "",
+          sstep: l.wb_seq_step || 0,
+          snext: l.wb_seq_next_at || null,
+          ca: l.created_at,
+          ua: now,
+        });
+      }
+      // Migra invitados → webinar_invites.
+      const invited = db.prepare("SELECT id FROM leads WHERE wb_invited=1").all() as { id: number }[];
+      const insInv = db.prepare("INSERT OR IGNORE INTO webinar_invites (webinar_id, lead_id) VALUES (?,?)");
+      for (const r of invited) insInv.run(wid, r.id);
+    }
+  } catch (e) {
+    console.error("[db] migración a múltiples webinars falló:", e);
+  }
 
   return db;
 }
