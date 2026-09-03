@@ -369,12 +369,34 @@ function RegistrationsView({ webinar, onBack }: { webinar: Webinar; onBack: () =
   const [loading, setLoading] = useState(true);
   const [dragId, setDragId] = useState<number | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
+  const [editing, setEditing] = useState<RegLead | null>(null);
 
   async function load() {
     const res = await fetch(`/api/admin/webinars/${webinar.id}/registrations`);
     const d = await res.json().catch(() => ({}));
     if (d?.ok) setRegs(d.registrations);
     setLoading(false);
+  }
+
+  // Guarda los datos editados del lead (nombre, WhatsApp, ciudad, iglesia).
+  async function saveLead(leadId: number, fields: Partial<RegLead>) {
+    setRegs((rs) => rs.map((r) => (r.id === leadId ? { ...r, ...fields } : r)));
+    await fetch(`/api/admin/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    });
+  }
+
+  // Quita a la persona de ESTE webinar (no borra el lead ni sus otros embudos).
+  async function removeReg(leadId: number) {
+    setRegs((rs) => rs.filter((r) => r.id !== leadId));
+    setEditing(null);
+    await fetch(`/api/admin/webinars/${webinar.id}/registrations`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leadId }),
+    });
   }
   useEffect(() => {
     load();
@@ -461,11 +483,31 @@ function RegistrationsView({ webinar, onBack }: { webinar: Webinar; onBack: () =
                         }}
                         animate={{ opacity: dragId === r.id ? 0.35 : 1 }}
                         className={cn(
-                          "cursor-grab select-none rounded-xl border bg-white p-3 active:cursor-grabbing",
+                          "group cursor-grab select-none rounded-xl border bg-white p-3 active:cursor-grabbing",
                           dragId === r.id ? "border-dashed border-violet-400" : "border-slate-200 hover:shadow-md"
                         )}
                       >
-                        <h3 className="text-sm font-semibold text-slate-800">{r.name}</h3>
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-sm font-semibold text-slate-800">{r.name}</h3>
+                          <div className="flex flex-none gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                            <button
+                              onClick={() => setEditing(r)}
+                              title="Editar datos"
+                              className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`¿Quitar a ${r.name} de este webinar?`)) removeReg(r.id);
+                              }}
+                              title="Quitar del webinar"
+                              className="rounded-md p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
                         <p className="mt-0.5 truncate text-[12px] text-slate-500">{r.email}</p>
                         {(r.city || r.church) && (
                           <p className="mt-0.5 truncate text-[11.5px] text-slate-400">{r.church || r.city}</p>
@@ -494,6 +536,92 @@ function RegistrationsView({ webinar, onBack }: { webinar: Webinar; onBack: () =
           </div>
         </LayoutGroup>
       )}
+
+      {editing && (
+        <RegEditModal
+          reg={editing}
+          onClose={() => setEditing(null)}
+          onSave={saveLead}
+          onDelete={removeReg}
+        />
+      )}
+    </div>
+  );
+}
+
+// Editar datos del registrado (o quitarlo del webinar).
+function RegEditModal({
+  reg, onClose, onSave, onDelete,
+}: {
+  reg: RegLead;
+  onClose: () => void;
+  onSave: (leadId: number, fields: Partial<RegLead>) => void;
+  onDelete: (leadId: number) => void;
+}) {
+  const [f, setF] = useState({
+    name: reg.name || "",
+    whatsapp: reg.whatsapp || "",
+    city: reg.city || "",
+    church: reg.church || "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    await onSave(reg.id, f);
+    setSaving(false);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="flex w-full max-w-[440px] flex-col rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 p-5">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
+            <Pencil size={17} /> Editar registrado
+          </h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">✕</button>
+        </div>
+        <div className="space-y-3 p-5">
+          <Field label="Nombre">
+            <input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Correo (no editable)">
+            <input value={reg.email} disabled className={`${inputCls} bg-slate-50 text-slate-400`} />
+          </Field>
+          <Field label="WhatsApp">
+            <input value={f.whatsapp} onChange={(e) => setF({ ...f, whatsapp: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Ciudad / País">
+            <input value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Iglesia">
+            <input value={f.church} onChange={(e) => setF({ ...f, church: e.target.value })} className={inputCls} />
+          </Field>
+        </div>
+        <div className="flex items-center justify-between gap-2 border-t border-slate-200 p-4">
+          <button
+            onClick={() => {
+              if (confirm(`¿Quitar a ${reg.name} de este webinar?`)) onDelete(reg.id);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+          >
+            <Trash2 size={14} /> Quitar del webinar
+          </button>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+              Cancelar
+            </button>
+            <button
+              onClick={save}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Guardar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

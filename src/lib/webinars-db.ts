@@ -156,6 +156,11 @@ export function setRegistrationAttended(webinarId: number, leadId: number, atten
   ).run({ a: attended ? 1 : 0, w: webinarId, l: leadId, now: new Date().toISOString() });
 }
 
+// Quita a un lead de ESTE webinar (no borra el lead ni sus otros embudos).
+export function removeRegistration(webinarId: number, leadId: number): void {
+  db.prepare("DELETE FROM webinar_registrations WHERE webinar_id=? AND lead_id=?").run(webinarId, leadId);
+}
+
 // ── Recordatorios y secuencia (por registro), para el cron ────────────────────
 export type RegRow = {
   reg_id: number;
