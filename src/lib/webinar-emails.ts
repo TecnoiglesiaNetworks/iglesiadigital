@@ -85,7 +85,12 @@ function renderBodyHtml(text: string, l: LeadRow, cfg?: WebinarConfig, reason?: 
     const yt = line.match(/^\[YOUTUBE(?::\s*(.*?))?\]$/i);
     if (yt) return button(esc(subVars(yt[1] || "Ver el webinar en vivo →", l, c)), c.youtubeUrl, "#FF0000");
     const reg = line.match(/^\[REGISTRO(?::\s*(.*?))?\]$/i);
-    if (reg) return button(esc(subVars(reg[1] || "Registrarme gratis al webinar →", l, c)), `${BASE}/webinar`, "#FF5001");
+    // Apunta al landing de ESTE webinar (por slug), no al activo, para que las
+    // invitaciones por webinar lleven a la persona al evento correcto.
+    if (reg) {
+      const regUrl = c.slug ? `${BASE}/webinar/${c.slug}` : `${BASE}/webinar`;
+      return button(esc(subVars(reg[1] || "Registrarme gratis al webinar →", l, c)), regUrl, "#FF5001");
+    }
     const off = line.match(/^\[OFERTA(?::\s*(.*?))?\]$/i);
     if (off) return button(esc(subVars(off[1] || "Inscribirme al curso →", l, c)), offerUrl(l), "#FF5001");
     return `<p style="${pStyle}">${inline(line, l, c)}</p>`;
