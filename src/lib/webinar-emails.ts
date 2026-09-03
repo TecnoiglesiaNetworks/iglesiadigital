@@ -131,6 +131,7 @@ Tu lugar para el webinar **La Gran Comisión también es Digital** quedó aparta
 No te lo puedes perder: en una hora te voy a mostrar cómo usar Google, redes, publicidad e IA para que **{iglesia}** alcance a más personas.
 Falta un paso importante para que no te quedes fuera: únete al **grupo de WhatsApp** del webinar. Ahí te avisaremos todo (dinámicas, material y el enlace de acceso el día del evento).
 [GRUPO:Unirme al grupo de WhatsApp →]
+Si **aún no te uniste** al grupo, hazlo ahora y revisa los mensajes que ya publicamos ahí para que no te pierdas nada.
 El enlace para ver el webinar en vivo te llegará por este correo el día del evento. ¡Ahí nos vemos!`,
   },
   {
