@@ -344,7 +344,7 @@ export function WebinarLanding({ cfg }: { cfg: WebinarConfig }) {
 /* ── Tarjeta de registro ───────────────────────────────────────── */
 function RegistrationCard({ slug }: { slug: string }) {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", whatsapp: "", city: "" });
+  const [form, setForm] = useState({ name: "", email: "", whatsapp: "", church: "", city: "" });
   const [countryIso, setCountryIso] = useState("");
   const [countries, setCountries] = useState<CountryOpt[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -377,6 +377,7 @@ function RegistrationCard({ slug }: { slug: string }) {
     if (!form.name.trim()) errs.name = "Escribe tu nombre";
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) errs.email = "Correo no válido";
     if (form.whatsapp.replace(/\D/g, "").length < 8) errs.whatsapp = "WhatsApp no válido";
+    if (!form.church.trim()) errs.church = "Escribe el nombre de tu iglesia";
     if (!form.city.trim()) errs.city = "Escribe tu ciudad";
     if (!countryIso) errs.country = "Selecciona tu país";
     setErrors(errs);
@@ -419,6 +420,7 @@ function RegistrationCard({ slug }: { slug: string }) {
         <WField label="Nombre completo" value={form.name} onChange={(v) => set("name", v)} error={errors.name} placeholder="Pastor Juan Pérez" />
         <WField label="Correo electrónico" type="email" value={form.email} onChange={(v) => set("email", v)} error={errors.email} placeholder="tucorreo@iglesia.com" />
         <WField label="WhatsApp" type="tel" value={form.whatsapp} onChange={(v) => set("whatsapp", v)} error={errors.whatsapp} placeholder="+52 1 55 1234 5678" />
+        <WField label="Nombre de tu iglesia" value={form.church} onChange={(v) => set("church", v)} error={errors.church} placeholder="Ej. Iglesia Vida Nueva" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-[13.5px] font-medium text-muted">País</label>
