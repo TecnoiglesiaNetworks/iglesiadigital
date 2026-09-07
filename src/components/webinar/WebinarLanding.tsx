@@ -133,7 +133,7 @@ function WebinarTitle({ title, isDefault }: { title: string; isDefault: boolean 
     const { top, bottom } = splitTitleTwoLines(title);
     return (
       <h1 className="mt-5 flex flex-col items-center text-center font-display font-extrabold uppercase leading-[1.05]">
-        {top && <span className="block wtitle-white text-[clamp(26px,5.4vw,50px)]">{top}</span>}
+        {top && <span className="block wtitle-white text-[clamp(18px,3.8vw,35px)]">{top}</span>}
         <span className="mt-1.5 block wtitle-gold text-[clamp(28px,5.8vw,54px)]">{bottom}</span>
         <span className="wtitle-spark mx-auto mt-4" aria-hidden />
         <span className="mt-2 block wtitle-white text-[clamp(15px,2.6vw,22px)] font-semibold normal-case tracking-wide opacity-95">
