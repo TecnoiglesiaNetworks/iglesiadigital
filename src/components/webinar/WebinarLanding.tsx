@@ -92,16 +92,49 @@ function useCountdown(target: string) {
   };
 }
 
+/* Palabras "conectoras": evitamos terminar la línea blanca en una de ellas para
+   que el corte de dos líneas del título se vea natural. */
+const TITLE_CONNECTORS = new Set([
+  "de", "del", "la", "el", "los", "las", "en", "y", "e", "o", "u", "a", "al",
+  "lo", "se", "tu", "su", "mi", "con", "por", "para", "que", "un", "una", "uno",
+  "como", "cómo",
+]);
+
+/* Divide un título en dos líneas equilibradas: la 1ª (blanca) el arranque y la
+   2ª (dorada) el remate. Busca el corte más cercano a la mitad sin dejar una
+   palabra conectora al final de la 1ª línea. */
+function splitTitleTwoLines(title: string): { top: string; bottom: string } {
+  const t = title.trim();
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return { top: "", bottom: t };
+  if (words.length === 2) return { top: words[0], bottom: words[1] };
+  const target = t.length / 2;
+  let bestI = 1;
+  let bestScore = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const line1 = words.slice(0, i).join(" ");
+    let score = Math.abs(line1.length - target);
+    if (TITLE_CONNECTORS.has(words[i - 1].toLowerCase())) score += 100;
+    if (score < bestScore) {
+      bestScore = score;
+      bestI = i;
+    }
+  }
+  return { top: words.slice(0, bestI).join(" "), bottom: words.slice(bestI).join(" ") };
+}
+
 /* Título del webinar replicado en código (dorado metálico animado + glow).
    Se mantiene como <h1> con el texto real para SEO/lectores de pantalla. */
 function WebinarTitle({ title, isDefault }: { title: string; isDefault: boolean }) {
   // Título editable: si es el nombre por defecto, mantenemos el arte animado
-  // de 4 líneas; si lo cambiaron desde el admin, mostramos el nuevo nombre con
-  // un estilo dorado limpio (para que funcione con cualquier texto).
+  // de 4 líneas; si lo cambiaron desde el admin, lo mostramos en dos líneas
+  // (blanca + dorada) para que se vea equilibrado con cualquier texto.
   if (!isDefault) {
+    const { top, bottom } = splitTitleTwoLines(title);
     return (
-      <h1 className="mt-5 flex flex-col items-center text-center font-display font-extrabold uppercase leading-[1.02]">
-        <span className="block wtitle-gold text-[clamp(30px,6.5vw,60px)]">{title}</span>
+      <h1 className="mt-5 flex flex-col items-center text-center font-display font-extrabold uppercase leading-[1.05]">
+        {top && <span className="block wtitle-white text-[clamp(26px,5.4vw,50px)]">{top}</span>}
+        <span className="mt-1.5 block wtitle-gold text-[clamp(28px,5.8vw,54px)]">{bottom}</span>
         <span className="wtitle-spark mx-auto mt-4" aria-hidden />
         <span className="mt-2 block wtitle-white text-[clamp(15px,2.6vw,22px)] font-semibold normal-case tracking-wide opacity-95">
           Webinar Gratuito

@@ -116,6 +116,14 @@ function init(): Database.Database {
       lead_id    INTEGER NOT NULL,
       PRIMARY KEY (webinar_id, lead_id)
     );
+
+    -- Slugs viejos de un webinar cuya URL cambió: mantienen vivos los enlaces ya
+    -- compartidos redirigiendo al slug actual del webinar.
+    CREATE TABLE IF NOT EXISTS webinar_aliases (
+      slug       TEXT PRIMARY KEY,
+      webinar_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `);
 
   // Migración: columnas de pago (para bases creadas antes de esta versión).

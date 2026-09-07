@@ -22,8 +22,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   return NextResponse.json({ ok: true, webinar: withLabels(w) });
 }
 
-// PATCH → edita nombre, subtítulo, fecha/hora, link de YouTube o del grupo.
-// Body admite: { title?, subtitle?, startsAtLocal?, youtubeUrl?, whatsappGroupUrl?, joinImage? }.
+// PATCH → edita slug (URL), nombre, subtítulo, fecha/hora, link de YouTube o del grupo.
+// Al cambiar el slug, el anterior queda como alias y sigue funcionando.
+// Body admite: { slug?, title?, subtitle?, startsAtLocal?, youtubeUrl?, whatsappGroupUrl?, joinImage? }.
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const id = Number(params.id);
   if (!getWebinarById(id)) return NextResponse.json({ ok: false, error: "No existe" }, { status: 404 });
@@ -36,6 +37,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   const fields: Record<string, unknown> = {};
+  if (typeof body.slug === "string") fields.slug = body.slug;
   if (typeof body.title === "string") fields.title = body.title.trim();
   if (typeof body.subtitle === "string") fields.subtitle = body.subtitle.trim();
   if (typeof body.youtubeUrl === "string") fields.youtube_url = body.youtubeUrl.trim();

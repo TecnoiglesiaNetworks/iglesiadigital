@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AuroraBackground } from "@/components/ui/animated-background";
 import { WebinarLanding } from "@/components/webinar/WebinarLanding";
-import { getWebinarBySlug } from "@/lib/webinars-db";
+import { getWebinarBySlugOrAlias } from "@/lib/webinars-db";
 import { configForWebinar } from "@/lib/webinar-config";
 
 // Cada webinar tiene su propio landing en /webinar/<slug>. Se renderiza en cada
@@ -10,9 +10,9 @@ import { configForWebinar } from "@/lib/webinar-config";
 export const dynamic = "force-dynamic";
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const w = getWebinarBySlug(params.slug);
-  if (!w) return { title: "Webinar" };
-  const cfg = configForWebinar(w);
+  const res = getWebinarBySlugOrAlias(params.slug);
+  if (!res) return { title: "Webinar" };
+  const cfg = configForWebinar(res.webinar);
   const desc = `${cfg.subtitle} En vivo, gratis. ${cfg.dateLabel}, ${cfg.timeLabel} (CDMX). Cupos limitados.`;
   return {
     title: `Webinar gratis: ${cfg.title}`,
@@ -28,9 +28,11 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 }
 
 export default function WebinarSlugPage({ params }: { params: { slug: string } }) {
-  const w = getWebinarBySlug(params.slug);
-  if (!w) notFound();
-  const cfg = configForWebinar(w);
+  const res = getWebinarBySlugOrAlias(params.slug);
+  if (!res) notFound();
+  // Si entraron por una URL vieja (alias), redirige a la URL actual del webinar.
+  if (!res.canonical) redirect(`/webinar/${res.webinar.slug}`);
+  const cfg = configForWebinar(res.webinar);
   return (
     <>
       <main className="relative">

@@ -39,13 +39,42 @@ function slugify(s: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 60) || "webinar";
 }
+// Un slug está ocupado si lo usa un webinar activo o si es alias de alguno.
+function slugTaken(slug: string): boolean {
+  return (
+    !!db.prepare("SELECT 1 FROM webinars WHERE slug=?").get(slug) ||
+    !!db.prepare("SELECT 1 FROM webinar_aliases WHERE slug=?").get(slug)
+  );
+}
 function uniqueSlug(base: string): string {
   let slug = base;
   let n = 2;
-  while (db.prepare("SELECT 1 FROM webinars WHERE slug=?").get(slug)) {
+  while (slugTaken(slug)) {
     slug = `${base}-${n++}`;
   }
   return slug;
+}
+
+// ── Alias de URL (slugs viejos) ────────────────────────────────────────────────
+export function addWebinarAlias(slug: string, webinarId: number): void {
+  db.prepare(
+    "INSERT OR REPLACE INTO webinar_aliases (slug, webinar_id, created_at) VALUES (?,?,?)"
+  ).run(slug, webinarId, new Date().toISOString());
+}
+
+// Resuelve un slug al webinar, ya sea por su slug actual (canonical) o por un
+// alias viejo (canonical:false → conviene redirigir al slug actual).
+export function getWebinarBySlugOrAlias(
+  slug: string
+): { webinar: WebinarRow; canonical: boolean } | undefined {
+  const direct = getWebinarBySlug(slug);
+  if (direct) return { webinar: direct, canonical: true };
+  const a = db.prepare("SELECT webinar_id FROM webinar_aliases WHERE slug=?").get(slug) as
+    | { webinar_id: number }
+    | undefined;
+  if (!a) return undefined;
+  const w = getWebinarById(a.webinar_id);
+  return w ? { webinar: w, canonical: false } : undefined;
 }
 
 // ── Webinars ─────────────────────────────────────────────────────────────────
@@ -105,6 +134,20 @@ export function createWebinar(input: {
 
 const WEBINAR_FIELDS = ["title", "subtitle", "starts_at", "youtube_url", "whatsapp_group_url", "join_image"] as const;
 export function updateWebinar(id: number, fields: Record<string, unknown>): WebinarRow | undefined {
+  // Cambio de slug (URL): normaliza el nuevo, guarda el viejo como alias para no
+  // romper enlaces ya compartidos, y actualiza el slug del webinar.
+  if (typeof fields.slug === "string" && fields.slug.trim()) {
+    const current = getWebinarById(id);
+    if (current) {
+      const base = slugify(fields.slug);
+      if (base && base !== current.slug) {
+        db.prepare("DELETE FROM webinar_aliases WHERE slug=?").run(base);
+        const newSlug = uniqueSlug(base);
+        addWebinarAlias(current.slug, id);
+        db.prepare("UPDATE webinars SET slug=? WHERE id=?").run(newSlug, id);
+      }
+    }
+  }
   const keys = Object.keys(fields).filter((k) => (WEBINAR_FIELDS as readonly string[]).includes(k));
   if (keys.length === 0) return getWebinarById(id);
   const setClause = keys.map((k) => `${k} = @${k}`).join(", ");
@@ -121,6 +164,7 @@ export function setActiveWebinar(id: number): void {
 export function deleteWebinar(id: number): void {
   db.prepare("DELETE FROM webinar_registrations WHERE webinar_id=?").run(id);
   db.prepare("DELETE FROM webinar_invites WHERE webinar_id=?").run(id);
+  db.prepare("DELETE FROM webinar_aliases WHERE webinar_id=?").run(id);
   db.prepare("DELETE FROM webinars WHERE id=?").run(id);
 }
 

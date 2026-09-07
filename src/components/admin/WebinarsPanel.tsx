@@ -30,7 +30,7 @@ type RegLead = Lead & {
   reg_attended: number;
 };
 
-const emptyForm = { title: "", subtitle: "", startsAtLocal: "", youtubeUrl: "", whatsappGroupUrl: "" };
+const emptyForm = { title: "", subtitle: "", startsAtLocal: "", youtubeUrl: "", whatsappGroupUrl: "", slug: "" };
 
 export function WebinarsPanel() {
   const [webinars, setWebinars] = useState<Webinar[]>([]);
@@ -65,6 +65,7 @@ export function WebinarsPanel() {
       startsAtLocal: w.startsAtLocal,
       youtubeUrl: w.youtube_url,
       whatsappGroupUrl: w.whatsapp_group_url,
+      slug: w.slug,
     });
     setFormOpen(true);
   }
@@ -361,6 +362,19 @@ function WebinarFormModal({
           <Field label="Subtítulo">
             <input value={form.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="Cómo usar Google, redes, publicidad e IA…" className={inputCls} />
           </Field>
+          {editing && (
+            <Field label="Enlace del landing (URL)">
+              <div className="flex items-center rounded-lg border border-slate-300 focus-within:border-violet-500">
+                <span className="pl-3 text-sm text-slate-400">/webinar/</span>
+                <input
+                  value={form.slug}
+                  onChange={(e) => set("slug", e.target.value)}
+                  placeholder="mi-webinar"
+                  className="w-full rounded-lg bg-transparent px-1 py-2 text-sm outline-none"
+                />
+              </div>
+            </Field>
+          )}
           <Field label="Fecha y hora (CDMX)">
             <input type="datetime-local" value={form.startsAtLocal} onChange={(e) => set("startsAtLocal", e.target.value)} className={inputCls} />
           </Field>
@@ -371,7 +385,7 @@ function WebinarFormModal({
             <input value={form.whatsappGroupUrl} onChange={(e) => set("whatsappGroupUrl", e.target.value)} placeholder="https://chat.whatsapp.com/…" className={inputCls} />
           </Field>
           <p className="rounded-lg bg-slate-50 p-2.5 text-[12px] text-slate-500">
-            {editing ? "El enlace del landing no cambia al editar." : "Se generará un enlace único (/webinar/nombre) al crear."} Los horarios por país se calculan solos.
+            {editing ? "Si cambias el enlace, el anterior seguirá funcionando (redirige al nuevo), así no rompes links ya compartidos." : "Se generará un enlace único (/webinar/nombre) al crear."} Los horarios por país se calculan solos.
           </p>
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-slate-200 p-4">
