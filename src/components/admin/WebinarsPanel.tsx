@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LayoutGroup, motion } from "framer-motion";
 import {
-  Plus, Loader2, Radio, Star, Link2, Copy, Check, Pencil, Trash2, Send, Users, ArrowLeft, Save, ExternalLink,
+  Plus, Loader2, Radio, Star, Link2, Copy, Check, Pencil, Trash2, Send, Users, ArrowLeft, Save, ExternalLink, CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WEBINAR_STAGES, type Lead } from "./stages";
@@ -175,6 +175,8 @@ function WebinarCard({
   const [inviteEligible, setInviteEligible] = useState<number | null>(null);
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState("");
+  const [notifying, setNotifying] = useState(false);
+  const [notifyMsg, setNotifyMsg] = useState("");
   const landingUrl = `/webinar/${w.slug}`;
 
   useEffect(() => {
@@ -217,6 +219,33 @@ function WebinarCard({
       setInviteMsg("Error de conexión");
     } finally {
       setInviting(false);
+    }
+  }
+
+  // Avisa del cambio de fecha SOLO a los ya registrados (usa la fecha actual del
+  // webinar, así que primero edita la fecha y luego avisa).
+  async function notifyReschedule() {
+    if (w.registrations <= 0) return;
+    if (
+      !confirm(
+        `Vas a avisar del CAMBIO DE FECHA a los ${w.registrations} registrado(s) de "${w.title}".\n\nNueva fecha: ${w.dateLabel} · ${w.timeLabel} (CDMX).\n\nAsegúrate de haber guardado la fecha correcta antes de enviar. ¿Continuar?`
+      )
+    )
+      return;
+    setNotifying(true);
+    setNotifyMsg("Enviando aviso…");
+    try {
+      const res = await fetch(`/api/admin/webinars/${w.id}/reschedule`, { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (d?.ok) {
+        setNotifyMsg(`✅ Aviso enviado a ${d.sent}${d.errors ? ` · ${d.errors} con error` : ""}`);
+      } else {
+        setNotifyMsg(d?.error || "No se pudo enviar");
+      }
+    } catch {
+      setNotifyMsg("Error de conexión");
+    } finally {
+      setNotifying(false);
     }
   }
 
@@ -268,6 +297,15 @@ function WebinarCard({
           Invitar{inviteEligible != null ? ` (${inviteEligible})` : ""}
         </button>
         <button
+          onClick={notifyReschedule}
+          disabled={notifying || w.registrations <= 0}
+          title="Avisar del cambio de fecha a los que ya se registraron"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+        >
+          {notifying ? <Loader2 size={13} className="animate-spin" /> : <CalendarClock size={13} />}
+          Avisar cambio de fecha
+        </button>
+        <button
           onClick={onEdit}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-[12.5px] font-medium text-slate-700 hover:bg-slate-50"
         >
@@ -291,6 +329,7 @@ function WebinarCard({
         </button>
       </div>
       {inviteMsg && <p className="mt-2 text-[11.5px] text-slate-500">{inviteMsg}</p>}
+      {notifyMsg && <p className="mt-1 text-[11.5px] text-slate-500">{notifyMsg}</p>}
     </div>
   );
 }

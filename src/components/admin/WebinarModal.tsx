@@ -18,6 +18,7 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
   const [reminders, setReminders] = useState<Tpl[]>([]);
   const [sequence, setSequence] = useState<Tpl[]>([]);
   const [invite, setInvite] = useState<Tpl[]>([]);
+  const [reschedule, setReschedule] = useState<Tpl[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState({ subject: "", body: "" });
@@ -33,6 +34,7 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
           setReminders(tpls.reminders || []);
           setSequence(tpls.sequence || []);
           setInvite(tpls.invite || []);
+          setReschedule(tpls.reschedule || []);
         }
       })
       .finally(() => alive && setLoading(false));
@@ -60,6 +62,7 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
       setReminders(d.reminders || []);
       setSequence(d.sequence || []);
       setInvite(d.invite || []);
+      setReschedule(d.reschedule || []);
       setEditing(null);
     } else {
       alert(d?.error || "No se pudo guardar");
@@ -190,6 +193,13 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
                 Este es el correo que se envía a los leads cuando usas <b>“Invitar”</b> en un webinar. Puedes editarlo.
               </p>
               <div className="mb-7 space-y-3">{invite.map(renderCard)}</div>
+
+              {/* Aviso de cambio de fecha (a los ya registrados) */}
+              <h3 className="mb-2 text-sm font-bold text-slate-700">Aviso de cambio de fecha</h3>
+              <p className="mb-3 text-[12.5px] text-slate-500">
+                Este es el correo que se envía cuando usas <b>“Avisar cambio de fecha”</b> en un webinar. Va solo a quienes <b>ya se registraron</b> y usa la nueva fecha del evento.
+              </p>
+              <div className="mb-7 space-y-3">{reschedule.map(renderCard)}</div>
 
               {/* Recordatorios */}
               <h3 className="mb-2 text-sm font-bold text-slate-700">Recordatorios (antes y durante el evento)</h3>

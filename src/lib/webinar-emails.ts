@@ -300,11 +300,28 @@ Aparta tu lugar (es gratis y hay cupo limitado):
 Nos vemos en vivo. 🙏`,
 };
 
+// Aviso de cambio de fecha (a los YA registrados). Envío manual desde el admin.
+// {fecha}/{hora}/{zona} se sustituyen con la fecha NUEVA de ese webinar.
+export const RESCHEDULE: WebinarTpl = {
+  key: "reschedule",
+  label: "Aviso de cambio de fecha (a los registrados)",
+  whenLabel: "Envío manual",
+  subject: "📅 Cambió la fecha del webinar — apunta la nueva",
+  body: `¡Hola {nombre}!
+Te escribo porque hubo un **cambio de fecha** en el webinar **La Gran Comisión también es Digital**, al que ya estás registrado. 🙌
+Esta es la **nueva fecha**:
+📅 **{fecha} · {hora}** ({zona})
+Tu lugar sigue apartado, no tienes que registrarte de nuevo. Solo aparta este nuevo horario en tu calendario para que no se te pase.
+El día del evento te enviaré por aquí el enlace para verlo en vivo. Para no perderte ningún aviso, quédate en el grupo de WhatsApp:
+[GRUPO:Unirme al grupo de WhatsApp →]
+¡Nos vemos ahí! 🙏`,
+};
+
 // Devuelve el texto (editado si existe, o el de por defecto) por clave.
 export function webinarTemplateFor(key: string): { subject: string; body: string } {
   const override = getWebinarTemplate(key);
   if (override) return override;
-  const all = [...REMINDERS, ...POST_SEQUENCE, INVITE];
+  const all = [...REMINDERS, ...POST_SEQUENCE, INVITE, RESCHEDULE];
   const d = all.find((t) => t.key === key);
   return { subject: d?.subject || "", body: d?.body || "" };
 }
@@ -372,6 +389,28 @@ export async function sendInviteBatch(
       errors++;
     }
     // Pausa entre envíos (no tras el último) para ritmo seguro.
+    if (i < leads.length - 1) await sleep(INVITE_DELAY_MS);
+  }
+  return { sent, errors };
+}
+
+// Avisa del cambio de fecha a un lote de YA registrados (envío manual). Reusa el
+// mismo ritmo seguro de envío que las invitaciones.
+export async function sendRescheduleBatch(
+  cfg: WebinarConfig,
+  leads: LeadRow[]
+): Promise<{ sent: number; errors: number }> {
+  let sent = 0;
+  let errors = 0;
+  for (let i = 0; i < leads.length; i++) {
+    const lead = leads[i];
+    try {
+      await sendWebinarEmail(lead, "reschedule", { cfg });
+      sent++;
+    } catch (e) {
+      console.error("[webinar] error avisando cambio de fecha a", lead.email, e);
+      errors++;
+    }
     if (i < leads.length - 1) await sleep(INVITE_DELAY_MS);
   }
   return { sent, errors };
