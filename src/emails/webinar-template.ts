@@ -53,7 +53,7 @@ export function webinarNotifyEmail(lead: {
   city?: string;
 }) {
   return `<div style="font-family:Arial,sans-serif;font-size:14px;color:#222">
-    <h2 style="margin:0 0 10px">Nuevo registro · Webinar "La Gran Comisión también es digital"</h2>
+    <h2 style="margin:0 0 10px">Nuevo registro al webinar</h2>
     <table cellpadding="4">
       <tr><td><b>Nombre</b></td><td>${lead.name}</td></tr>
       <tr><td><b>Correo</b></td><td>${lead.email}</td></tr>

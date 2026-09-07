@@ -48,6 +48,7 @@ function offerUrl(l: LeadRow) {
 // Formato editable (sin HTML crudo):
 //   · Cada línea = un párrafo.
 //   · {nombre} y {iglesia} = datos del registrado.
+//   · {titulo}, {fecha}, {hora}, {zona} = datos del webinar (nombre y horario).
 //   · **texto** = negrita.
 //   · [GRUPO]    o [GRUPO:Texto]    = botón verde al grupo de WhatsApp.
 //   · [YOUTUBE]  o [YOUTUBE:Texto]  = botón rojo al link de YouTube en vivo.
@@ -60,6 +61,7 @@ function subVars(s: string, l: LeadRow, cfg?: WebinarConfig) {
   return s
     .replace(/\{nombre\}/g, first(l))
     .replace(/\{iglesia\}/g, iglesia(l))
+    .replace(/\{titulo\}/g, c.title)
     .replace(/\{fecha\}/g, c.dateLabel)
     .replace(/\{hora\}/g, c.timeLabel)
     .replace(/\{zona\}/g, c.timeZoneMain);
@@ -150,7 +152,7 @@ export const REMINDERS: (WebinarTpl & { offsetMin: number })[] = [
     offsetMin: -1, // no se envía por tiempo; se dispara en el registro.
     subject: "¡Registro confirmado! Nos vemos en el webinar 🎉",
     body: `¡Hola {nombre}!
-Tu lugar para el webinar **La Gran Comisión también es Digital** quedó apartado. 🎉
+Tu lugar para el webinar **{titulo}** quedó apartado. 🎉
 📅 **{fecha} · {hora}** ({zona})
 No te lo puedes perder: en una hora te voy a mostrar cómo usar Google, redes, publicidad e IA para que **{iglesia}** alcance a más personas.
 Falta un paso importante para que no te quedes fuera: únete al **grupo de WhatsApp** del webinar. Ahí te avisaremos todo (dinámicas, material y el enlace de acceso el día del evento).
@@ -165,7 +167,7 @@ El enlace para ver el webinar en vivo te llegará por este correo el día del ev
     offsetMin: 24 * 60,
     subject: "Mañana es el webinar 🙌 (te llega el link el día del evento)",
     body: `Hola {nombre},
-Ya casi es momento. **Mañana** es nuestro webinar **La Gran Comisión también es Digital**.
+Ya casi es momento. **Mañana** es nuestro webinar **{titulo}**.
 📅 **{fecha} · {hora}** ({zona})
 El **día del evento** te enviaremos por aquí el enlace para verlo en vivo, así que mantente pendiente de tu correo y del grupo de WhatsApp.
 Si aún no estás en el grupo, únete ahora para no perderte ningún aviso:
@@ -177,7 +179,7 @@ Prepárate para tomar notas. Va a ser muy práctico. 🙏`,
     label: "Recordatorio · 1 hora antes",
     whenLabel: "1 hora antes",
     offsetMin: 60,
-    subject: "⏰ En 1 hora empezamos — La Gran Comisión también es Digital",
+    subject: "⏰ En 1 hora empezamos — {titulo}",
     body: `{nombre}, ¡ya casi! 🙌
 En **1 hora** comienza el webinar en vivo.
 🕗 Hoy · **{hora}** ({zona})
@@ -209,7 +211,7 @@ export const POST_SEQUENCE: (WebinarTpl & { afterHours: number })[] = [
     afterHours: 0,
     subject: "Gracias por acompañarnos hoy 🙏 (y el siguiente paso)",
     body: `¡Hola {nombre}!
-Gracias por estar en el webinar **La Gran Comisión también es Digital**. Espero que te hayas llevado ideas claras para llevar a **{iglesia}** al mundo digital.
+Gracias por estar en el webinar **{titulo}**. Espero que te hayas llevado ideas claras para llevar a **{iglesia}** al mundo digital.
 Durante el webinar te platiqué del **Programa Iglesia Digital**: 16 semanas llevándote de la mano —con sesiones en vivo cada 15 días— para construir tu presencia digital, activar el **Google Ad Grant ($10,000 USD/mes en publicidad gratis)** y montar tu embudo de seguimiento.
 Por haber asistido, tienes acceso a un precio especial. Míralo aquí:
 [OFERTA:Ver el precio especial del curso →]
@@ -308,7 +310,7 @@ export const RESCHEDULE: WebinarTpl = {
   whenLabel: "Envío manual",
   subject: "📅 Cambió la fecha del webinar — apunta la nueva",
   body: `¡Hola {nombre}!
-Te escribo porque hubo un **cambio de fecha** en el webinar **La Gran Comisión también es Digital**, al que ya estás registrado. 🙌
+Te escribo porque hubo un **cambio de fecha** en el webinar **{titulo}**, al que ya estás registrado. 🙌
 Esta es la **nueva fecha**:
 📅 **{fecha} · {hora}** ({zona})
 Tu lugar sigue apartado, no tienes que registrarte de nuevo. Solo aparta este nuevo horario en tu calendario para que no se te pase.
