@@ -22,6 +22,14 @@ export function siteGraph() {
           "Tecnoiglesia ayuda a iglesias a usar la tecnología con propósito para llegar a más personas. Su programa Iglesia Digital enseña evangelismo digital: presencia en Google y redes, Google Ad Grant, servicio en línea y seguimiento.",
         knowsAbout: KEYWORDS,
         areaServed: ["Latinoamérica", "Estados Unidos", "Europa"],
+        email: SITE.email,
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "customer support",
+          email: SITE.email,
+          availableLanguage: ["Spanish"],
+        },
+        sameAs: SITE.sameAs,
       },
       {
         "@type": "Person",
@@ -32,6 +40,7 @@ export function siteGraph() {
         url: SITE.url,
         description:
           "Pedro Abiú es fundador de Tecnoiglesia y del programa Iglesia Digital. Con más de 16 años de experiencia ha ayudado a miles de iglesias a crecer en internet mediante evangelismo digital.",
+        sameAs: SITE.sameAs,
       },
       {
         "@type": "WebSite",

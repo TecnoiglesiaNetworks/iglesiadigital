@@ -16,6 +16,17 @@ export const SITE = {
   ogImageWidth: 986,
   ogImageHeight: 720,
   membersUrl: "https://club.iglesiadigital.net",
+  email: "contacto@tecnoiglesia.com",
+  // Perfiles oficiales (Tecnoiglesia). Se usan como sameAs en el JSON-LD y como
+  // enlaces visibles en el footer. Fuente: tecnoiglesia.com.
+  social: {
+    youtube: "https://youtube.com/tecnoiglesia",
+    instagram: "https://instagram.com/tecnoiglesia",
+    facebook: "https://facebook.com/tecnoiglesia",
+  },
+  get sameAs() {
+    return Object.values(this.social);
+  },
 };
 
 /* Palabras clave y frases de búsqueda del público objetivo (pastores y
