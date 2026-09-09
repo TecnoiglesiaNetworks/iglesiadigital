@@ -19,7 +19,10 @@ export function HotmartCheckout({
         href={url.toString()}
         className="flex w-full items-center justify-center rounded-full bg-[#039606] px-6 py-4 text-center font-display text-[17px] font-bold text-white shadow-[0_14px_30px_-10px_rgba(0,0,0,0.6)] transition hover:brightness-110 active:scale-[0.99]"
       >
-        Comprar ahora · ${OFFER_PRICE} {OFFER_CURRENCY}
+        Comprar ahora ·{" "}
+        <span className="whitespace-nowrap">
+          ${OFFER_PRICE} {OFFER_CURRENCY}
+        </span>
       </a>
       <p className="mt-3 text-[12px] text-white/70">
         Pago seguro con Hotmart · Tarjeta de crédito/débito, PayPal y más.
