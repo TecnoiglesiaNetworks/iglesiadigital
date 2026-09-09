@@ -6,7 +6,7 @@ import { questions } from "./quiz-data";
 import { computeResult, type Answers, type Result } from "./scoring";
 import { Combobox, type ComboOption } from "./Combobox";
 import { loadCountries, type CountryOpt } from "./geo";
-import { PayPalCheckout } from "@/components/offer/PayPalCheckout";
+import { HotmartCheckout } from "@/components/offer/HotmartCheckout";
 import { CountdownOffer } from "@/components/offer/CountdownOffer";
 import { ProgramDetails } from "@/components/offer/ProgramDetails";
 import { ChatwootWidget } from "@/components/ChatwootWidget";
@@ -397,7 +397,7 @@ export function AuditQuiz() {
                   </h3>
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
                     <span className="whitespace-nowrap text-[22px] font-semibold text-red-500 line-through">${OFFER_PRICE_OLD} {OFFER_CURRENCY}</span>
-                    <span className="whitespace-nowrap font-display text-[clamp(34px,8vw,44px)] font-extrabold leading-none text-green-400">
+                    <span className="whitespace-nowrap font-display text-[clamp(34px,8vw,44px)] font-extrabold leading-none text-white">
                       ${OFFER_PRICE} {OFFER_CURRENCY}
                     </span>
                   </div>
@@ -408,7 +408,7 @@ export function AuditQuiz() {
                     Incluye acceso al <b className="text-white">curso de 16 semanas</b> con <b className="text-white">Zoom en vivo cada 15 días</b>.
                   </p>
                   <div className="mx-auto mt-6 max-w-[480px]">
-                    <PayPalCheckout lead={{ name: lead.name, email: lead.email, church: lead.church }} />
+                    <HotmartCheckout lead={{ name: lead.name, email: lead.email, church: lead.church }} />
                   </div>
                 </div>
               </div>

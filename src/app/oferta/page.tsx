@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AuroraBackground } from "@/components/ui/animated-background";
 import { CountdownOffer } from "@/components/offer/CountdownOffer";
-import { PayPalCheckout } from "@/components/offer/PayPalCheckout";
+import { HotmartCheckout } from "@/components/offer/HotmartCheckout";
 import { ProgramDetails } from "@/components/offer/ProgramDetails";
 import {
   OFFER_PRICE,
@@ -61,7 +61,7 @@ export default function OfertaPage({
                 <span className="whitespace-nowrap text-[22px] font-semibold text-red-500 line-through">
                   ${OFFER_PRICE_OLD} {OFFER_CURRENCY}
                 </span>
-                <span className="whitespace-nowrap font-display text-[clamp(34px,8vw,44px)] font-extrabold leading-none text-green-400">
+                <span className="whitespace-nowrap font-display text-[clamp(34px,8vw,44px)] font-extrabold leading-none text-white">
                   ${OFFER_PRICE} {OFFER_CURRENCY}
                 </span>
               </div>
@@ -72,7 +72,7 @@ export default function OfertaPage({
                 Precio de lanzamiento por nuestro aniversario. Por poco tiempo.
               </p>
               <div className="mx-auto mt-6 max-w-[480px]">
-                <PayPalCheckout lead={lead} />
+                <HotmartCheckout lead={lead} />
               </div>
             </div>
 
