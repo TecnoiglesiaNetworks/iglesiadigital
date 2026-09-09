@@ -17,9 +17,9 @@ export function HotmartCheckout({
     <div>
       <a
         href={url.toString()}
-        className="flex w-full items-center justify-center rounded-full bg-[#039606] px-6 py-4 text-center font-display text-[17px] font-bold text-white shadow-[0_14px_30px_-10px_rgba(0,0,0,0.6)] transition hover:brightness-110 active:scale-[0.99]"
+        className="block w-full rounded-full bg-[#039606] px-6 py-4 text-center font-display text-[17px] font-bold leading-tight text-white shadow-[0_14px_30px_-10px_rgba(0,0,0,0.6)] transition hover:brightness-110 active:scale-[0.99]"
       >
-        Comprar ahora ·{" "}
+        <span className="whitespace-nowrap">Comprar ahora</span>{" "}
         <span className="whitespace-nowrap">
           ${OFFER_PRICE} {OFFER_CURRENCY}
         </span>
