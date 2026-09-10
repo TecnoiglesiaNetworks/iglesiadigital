@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/site/Navbar";
+import { WebinarBar } from "@/components/site/WebinarBar";
 import { Hero } from "@/components/site/Hero";
 import { VideoSection } from "@/components/site/VideoSection";
 import { Marquee } from "@/components/site/Marquee";
@@ -27,6 +28,7 @@ export default function Home() {
   return (
     <main>
       <JsonLd data={faqGraph(faqs)} />
+      <WebinarBar />
       <Navbar />
       <Hero />
       <VideoSection />

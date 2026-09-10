@@ -30,6 +30,9 @@
 
   --font-d: "Montserrat", system-ui, sans-serif; /* títulos */
   --font-b: "Inter", system-ui, sans-serif;      /* cuerpo */
+
+  /* Altura del cintillo del webinar (0 cuando no está visible). */
+  --wbar-h: 0px;
 }
 
 * { box-sizing: border-box; }
@@ -42,6 +45,8 @@ body {
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
   overflow-x: hidden;
+  /* Deja espacio para el cintillo del webinar (0 cuando no está visible). */
+  padding-top: var(--wbar-h);
 }
 
 .marquee-mask {
