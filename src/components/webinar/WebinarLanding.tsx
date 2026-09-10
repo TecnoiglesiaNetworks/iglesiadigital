@@ -377,7 +377,7 @@ export function WebinarLanding({ cfg }: { cfg: WebinarConfig }) {
 /* ── Tarjeta de registro ───────────────────────────────────────── */
 function RegistrationCard({ slug }: { slug: string }) {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", whatsapp: "", church: "", city: "" });
+  const [form, setForm] = useState({ name: "", email: "", whatsapp: "", church: "" });
   const [countryIso, setCountryIso] = useState("");
   const [countries, setCountries] = useState<CountryOpt[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -411,14 +411,12 @@ function RegistrationCard({ slug }: { slug: string }) {
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) errs.email = "Correo no válido";
     if (form.whatsapp.replace(/\D/g, "").length < 8) errs.whatsapp = "WhatsApp no válido";
     if (!form.church.trim()) errs.church = "Escribe el nombre de tu iglesia";
-    if (!form.city.trim()) errs.city = "Escribe tu ciudad";
     if (!countryIso) errs.country = "Selecciona tu país";
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
-    // Enviamos "Ciudad, País" en el campo city (igual que el quiz).
-    const countryName = countries.find((c) => c.iso === countryIso)?.name || "";
-    const city = [form.city.trim(), countryName].filter(Boolean).join(", ");
+    // Enviamos el país en el campo city (se conserva la ubicación del lead).
+    const city = countries.find((c) => c.iso === countryIso)?.name || "";
 
     setSending(true);
     try {
@@ -450,25 +448,22 @@ function RegistrationCard({ slug }: { slug: string }) {
       <p className="mt-1.5 text-[14px] text-muted">Cupos limitados. Te enviamos el acceso por correo.</p>
 
       <div className="mt-6 space-y-4">
-        <WField label="Nombre completo" value={form.name} onChange={(v) => set("name", v)} error={errors.name} placeholder="Pastor Juan Pérez" />
-        <WField label="Correo electrónico" type="email" value={form.email} onChange={(v) => set("email", v)} error={errors.email} placeholder="tucorreo@iglesia.com" />
+        <WField label="Nombre completo" value={form.name} onChange={(v) => set("name", v)} error={errors.name} placeholder="Tu nombre" />
+        <WField label="Correo electrónico" type="email" value={form.email} onChange={(v) => set("email", v)} error={errors.email} placeholder="Tu correo" />
         <WField label="WhatsApp" type="tel" value={form.whatsapp} onChange={(v) => set("whatsapp", v)} error={errors.whatsapp} placeholder="+52 1 55 1234 5678" />
         <WField label="Nombre de tu iglesia" value={form.church} onChange={(v) => set("church", v)} error={errors.church} placeholder="Ej. Iglesia Vida Nueva" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-[13.5px] font-medium text-muted">País</label>
-            <Combobox
-              value={countryIso}
-              onChange={(v) => { setCountryIso(v); if (errors.country) setErrors((e) => ({ ...e, country: "" })); }}
-              options={countryOptions}
-              loading={countries.length === 0}
-              placeholder="Selecciona tu país"
-              searchPlaceholder="Buscar país…"
-              className={cn("w-full", errors.country && "ring-1 ring-red-500")}
-            />
-            {errors.country && <p className="mt-1.5 text-[12.5px] text-red-400">{errors.country}</p>}
-          </div>
-          <WField label="Ciudad" value={form.city} onChange={(v) => set("city", v)} error={errors.city} placeholder="Escribe tu ciudad" />
+        <div>
+          <label className="mb-1.5 block text-[13.5px] font-medium text-muted">País</label>
+          <Combobox
+            value={countryIso}
+            onChange={(v) => { setCountryIso(v); if (errors.country) setErrors((e) => ({ ...e, country: "" })); }}
+            options={countryOptions}
+            loading={countries.length === 0}
+            placeholder="Selecciona tu país"
+            searchPlaceholder="Buscar país…"
+            className={cn("w-full", errors.country && "ring-1 ring-red-500")}
+          />
+          {errors.country && <p className="mt-1.5 text-[12.5px] text-red-400">{errors.country}</p>}
         </div>
       </div>
 
