@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGroup, motion } from "framer-motion";
 import {
-  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail,
+  Search, Plus, LayoutGrid, Table2, RefreshCw, LogOut, CalendarCheck, Loader2, Trash2, Users, BarChart3, Webhook, Mail, Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGES, STAGE_LABEL, TEMP_CLASS, type Lead } from "./stages";
@@ -14,6 +14,7 @@ import { IntegrationsModal } from "./IntegrationsModal";
 import { EmailsModal } from "./EmailsModal";
 import { WebinarModal } from "./WebinarModal";
 import { WebinarsPanel } from "./WebinarsPanel";
+import { OfferModal } from "./OfferModal";
 
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
@@ -55,6 +56,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const [usersOpen, setUsersOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [emailsOpen, setEmailsOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
   const [dragId, setDragId] = useState<number | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -248,6 +250,13 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
             <Mail size={16} />
           </button>
           <button
+            onClick={() => setOfferOpen(true)}
+            title="Cuenta regresiva de la oferta"
+            className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+          >
+            <Timer size={16} />
+          </button>
+          <button
             onClick={() => setIntegrationsOpen(true)}
             title="Integración Calendly (webhook)"
             className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
@@ -396,6 +405,7 @@ export function Pipeline({ initialLeads }: { initialLeads: Lead[] }) {
       {usersOpen && <UsersModal onClose={() => setUsersOpen(false)} />}
       {integrationsOpen && <IntegrationsModal onClose={() => setIntegrationsOpen(false)} />}
       {emailsOpen && <EmailsModal onClose={() => setEmailsOpen(false)} />}
+      {offerOpen && <OfferModal onClose={() => setOfferOpen(false)} />}
       {webinarOpen && <WebinarModal onClose={() => setWebinarOpen(false)} />}
     </div>
   );

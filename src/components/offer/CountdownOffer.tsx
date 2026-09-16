@@ -2,12 +2,11 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/* Cuenta regresiva REAL hacia una fecha límite fija (no se reinicia por visita).
-   Al llegar a 0 se queda en 00 y cambia el texto. Para cambiar la fecha de la
-   próxima oferta, edita DEFAULT_DEADLINE (hora de CDMX, UTC-6). */
-// Domingo 20 de septiembre de 2026, 12:00 AM (CDMX). Es decir, termina justo al
-// entrar el domingo (la noche del sábado 19).
-const DEFAULT_DEADLINE = "2026-09-20T00:00:00-06:00";
+/* Cuenta regresiva REAL hacia una fecha límite (no se reinicia por visita).
+   La fecha se configura desde el admin (Ajustes de la oferta) y se lee de
+   /api/offer/deadline. Al llegar a 0 se queda en 00 y cambia el texto. */
+// Respaldo por si la API no responde (domingo 20 sep 2026, 12 AM CDMX).
+const FALLBACK_DEADLINE = "2026-09-20T00:00:00-06:00";
 
 function parts(msLeft: number) {
   const s = Math.max(0, Math.floor(msLeft / 1000));
@@ -19,10 +18,25 @@ function parts(msLeft: number) {
   };
 }
 
-export function CountdownOffer({ deadline = DEFAULT_DEADLINE }: { deadline?: string }) {
-  const target = new Date(deadline).getTime();
+export function CountdownOffer({ deadline }: { deadline?: string }) {
+  const [target, setTarget] = useState(() => new Date(deadline || FALLBACK_DEADLINE).getTime());
   // null hasta que monta en el cliente → evita desajuste de hidratación.
   const [left, setLeft] = useState<number | null>(null);
+
+  // Carga la fecha límite configurada en el admin (si no se pasó por prop).
+  useEffect(() => {
+    if (deadline) return;
+    let alive = true;
+    fetch("/api/offer/deadline")
+      .then((r) => r.json())
+      .then((d) => {
+        if (alive && d?.deadline) setTarget(new Date(d.deadline).getTime());
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [deadline]);
 
   useEffect(() => {
     const tick = () => setLeft(target - Date.now());
