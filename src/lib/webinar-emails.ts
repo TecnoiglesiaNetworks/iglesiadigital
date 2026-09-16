@@ -434,6 +434,28 @@ export async function sendRescheduleBatch(
   return { sent, errors };
 }
 
+// Envía el correo de repetición (48 h) a un lote de registrados, sin esperar al
+// cron. Envío manual desde el admin. Mismo ritmo seguro que las invitaciones.
+export async function sendReplayBatch(
+  cfg: WebinarConfig,
+  leads: LeadRow[]
+): Promise<{ sent: number; errors: number }> {
+  let sent = 0;
+  let errors = 0;
+  for (let i = 0; i < leads.length; i++) {
+    const lead = leads[i];
+    try {
+      await sendWebinarEmail(lead, "replay", { cfg });
+      sent++;
+    } catch (e) {
+      console.error("[webinar] error enviando repetición a", lead.email, e);
+      errors++;
+    }
+    if (i < leads.length - 1) await sleep(INVITE_DELAY_MS);
+  }
+  return { sent, errors };
+}
+
 // ── Procesador (lo llama el cron): recorre TODOS los webinars ─────────────────
 export async function processWebinar(): Promise<{ reminders: number; sequence: number; errors: number }> {
   const now = Date.now();

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LayoutGroup, motion } from "framer-motion";
 import {
-  Plus, Loader2, Radio, Star, Link2, Copy, Check, Pencil, Trash2, Send, Users, ArrowLeft, Save, ExternalLink, CalendarClock,
+  Plus, Loader2, Radio, Star, Link2, Copy, Check, Pencil, Trash2, Send, Users, ArrowLeft, Save, ExternalLink, CalendarClock, PlayCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WEBINAR_STAGES, type Lead } from "./stages";
@@ -180,6 +180,8 @@ function WebinarCard({
   const [inviteMsg, setInviteMsg] = useState("");
   const [notifying, setNotifying] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState("");
+  const [sendingReplay, setSendingReplay] = useState(false);
+  const [replayMsg, setReplayMsg] = useState("");
   const landingUrl = `/webinar/${w.slug}`;
 
   useEffect(() => {
@@ -252,6 +254,33 @@ function WebinarCard({
     }
   }
 
+  // Manda YA el correo de repetición (48 h) a todos los registrados, sin esperar
+  // al cron. Usa el link de la repetición del webinar (o el del live si está vacío).
+  async function sendReplayNow() {
+    if (w.registrations <= 0) return;
+    if (
+      !confirm(
+        `Vas a enviar YA el correo de la REPETICIÓN a los registrados de "${w.title}".\n\nAsegúrate de haber guardado el "Link de la repetición" en Editar. ¿Continuar?`
+      )
+    )
+      return;
+    setSendingReplay(true);
+    setReplayMsg("Enviando repetición…");
+    try {
+      const res = await fetch(`/api/admin/webinars/${w.id}/send-replay`, { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (d?.ok) {
+        setReplayMsg(`✅ Repetición enviada a ${d.sent}${d.errors ? ` · ${d.errors} con error` : ""}`);
+      } else {
+        setReplayMsg(d?.error || "No se pudo enviar");
+      }
+    } catch {
+      setReplayMsg("Error de conexión");
+    } finally {
+      setSendingReplay(false);
+    }
+  }
+
   return (
     <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-start justify-between gap-2">
@@ -309,6 +338,15 @@ function WebinarCard({
           Avisar cambio de fecha
         </button>
         <button
+          onClick={sendReplayNow}
+          disabled={sendingReplay || w.registrations <= 0}
+          title="Enviar YA el correo de la repetición (48 h) a los registrados"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+        >
+          {sendingReplay ? <Loader2 size={13} className="animate-spin" /> : <PlayCircle size={13} />}
+          Enviar repetición
+        </button>
+        <button
           onClick={onEdit}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-[12.5px] font-medium text-slate-700 hover:bg-slate-50"
         >
@@ -333,6 +371,7 @@ function WebinarCard({
       </div>
       {inviteMsg && <p className="mt-2 text-[11.5px] text-slate-500">{inviteMsg}</p>}
       {notifyMsg && <p className="mt-1 text-[11.5px] text-slate-500">{notifyMsg}</p>}
+      {replayMsg && <p className="mt-1 text-[11.5px] text-slate-500">{replayMsg}</p>}
     </div>
   );
 }
