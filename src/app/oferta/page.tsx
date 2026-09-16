@@ -56,7 +56,7 @@ export default function OfertaPage({
 
             {/* Oferta + pago */}
             <div id="checkout" className="scroll-mt-6 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">
-              <CountdownOffer seconds={600} />
+              <CountdownOffer />
               <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
                 <span className="whitespace-nowrap text-[22px] font-semibold text-red-500 line-through">
                   ${OFFER_PRICE_OLD} {OFFER_CURRENCY}

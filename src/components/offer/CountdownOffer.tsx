@@ -1,66 +1,65 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/* Cuenta regresiva de la oferta. Arranca cuando el bloque entra en pantalla
-   (al bajar y ver el pago), baja hasta 00:00 y se queda ahí. No se guarda en el
-   navegador, así que si el visitante vuelve a entrar, la cuenta empieza de nuevo. */
-export function CountdownOffer({ seconds = 600 }: { seconds?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(false);
-  const [left, setLeft] = useState(seconds);
+/* Cuenta regresiva REAL hacia una fecha límite fija (no se reinicia por visita).
+   Al llegar a 0 se queda en 00 y cambia el texto. Para cambiar la fecha de la
+   próxima oferta, edita DEFAULT_DEADLINE (hora de CDMX, UTC-6). */
+// Domingo 20 de septiembre de 2026, 12:00 AM (CDMX). Es decir, termina justo al
+// entrar el domingo (la noche del sábado 19).
+const DEFAULT_DEADLINE = "2026-09-20T00:00:00-06:00";
 
-  // Se activa al entrar en el viewport.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setActive(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.25 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+function parts(msLeft: number) {
+  const s = Math.max(0, Math.floor(msLeft / 1000));
+  return {
+    d: Math.floor(s / 86400),
+    h: Math.floor((s % 86400) / 3600),
+    m: Math.floor((s % 3600) / 60),
+    s: s % 60,
+  };
+}
 
-  // Tic-tac una vez activa; se detiene sola al llegar a 0.
+export function CountdownOffer({ deadline = DEFAULT_DEADLINE }: { deadline?: string }) {
+  const target = new Date(deadline).getTime();
+  // null hasta que monta en el cliente → evita desajuste de hidratación.
+  const [left, setLeft] = useState<number | null>(null);
+
   useEffect(() => {
-    if (!active) return;
-    const id = setInterval(() => {
-      setLeft((s) => {
-        if (s <= 1) {
-          clearInterval(id);
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
+    const tick = () => setLeft(target - Date.now());
+    tick();
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [active]);
+  }, [target]);
 
-  const mm = String(Math.floor(left / 60)).padStart(2, "0");
-  const ss = String(left % 60).padStart(2, "0");
-  const done = left === 0;
+  const done = left !== null && left <= 0;
+  const p = parts(left ?? 0);
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  const Box = ({ v, label }: { v: number; label: string }) => (
+    <div className="flex flex-col items-center">
+      <span className="rounded-lg bg-panel3 px-2.5 py-1 font-display text-[30px] font-extrabold tabular-nums">
+        {pad(v)}
+      </span>
+      <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted">{label}</span>
+    </div>
+  );
+  const Sep = () => <span className="pb-4 text-[24px] font-bold">:</span>;
 
   return (
-    <div ref={ref} className="mb-4 flex flex-col items-center gap-1.5">
+    <div className="mb-5 flex flex-col items-center gap-2">
       <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-        {done ? "La oferta está por cerrar" : "Esta oferta expira en"}
+        {done ? "La oferta cerró" : "Esta oferta termina en"}
       </span>
-      <div
-        className={cn(
-          "flex items-center gap-1.5 font-display text-[32px] font-extrabold tabular-nums",
-          done ? "text-red-500" : "text-accent"
-        )}
-      >
-        <span className="rounded-lg bg-panel3 px-2.5 py-1">{mm}</span>
-        <span>:</span>
-        <span className="rounded-lg bg-panel3 px-2.5 py-1">{ss}</span>
+      <div className={cn("flex items-center gap-1.5", done ? "text-red-500" : "text-accent")}>
+        <Box v={p.d} label="días" />
+        <Sep />
+        <Box v={p.h} label="hrs" />
+        <Sep />
+        <Box v={p.m} label="min" />
+        <Sep />
+        <Box v={p.s} label="seg" />
       </div>
+      <span className="text-[12.5px] font-semibold text-red-400">…y no volverá.</span>
     </div>
   );
 }

@@ -388,7 +388,7 @@ export function AuditQuiz() {
 
                 {/* Oferta especial + pago */}
                 <div id="checkout" className="mt-9 scroll-mt-6 rounded-[16px] border border-accent/40 bg-gradient-to-b from-accent/[0.12] to-transparent p-4 text-center sm:p-7">
-                  <CountdownOffer seconds={600} />
+                  <CountdownOffer />
                   <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
                     🎉 Precio de aniversario · Solo por poco tiempo
                   </div>
