@@ -14,6 +14,7 @@ type Webinar = {
   subtitle: string;
   starts_at: string;
   youtube_url: string;
+  replay_url: string;
   whatsapp_group_url: string;
   join_image: string;
   active: number;
@@ -30,7 +31,7 @@ type RegLead = Lead & {
   reg_attended: number;
 };
 
-const emptyForm = { title: "", subtitle: "", startsAtLocal: "", youtubeUrl: "", whatsappGroupUrl: "", slug: "" };
+const emptyForm = { title: "", subtitle: "", startsAtLocal: "", youtubeUrl: "", replayUrl: "", whatsappGroupUrl: "", slug: "" };
 
 export function WebinarsPanel() {
   const [webinars, setWebinars] = useState<Webinar[]>([]);
@@ -64,6 +65,7 @@ export function WebinarsPanel() {
       subtitle: w.subtitle,
       startsAtLocal: w.startsAtLocal,
       youtubeUrl: w.youtube_url,
+      replayUrl: w.replay_url,
       whatsappGroupUrl: w.whatsapp_group_url,
       slug: w.slug,
     });
@@ -380,6 +382,9 @@ function WebinarFormModal({
           </Field>
           <Field label="Link de YouTube (se envía 30 min antes)">
             <input value={form.youtubeUrl} onChange={(e) => set("youtubeUrl", e.target.value)} placeholder="https://youtube.com/live/…" className={inputCls} />
+          </Field>
+          <Field label="Link de la repetición (correo post-webinar · 48 h)">
+            <input value={form.replayUrl} onChange={(e) => set("replayUrl", e.target.value)} placeholder="Vacío = usa el mismo link de YouTube de arriba" className={inputCls} />
           </Field>
           <Field label="Link del grupo de WhatsApp">
             <input value={form.whatsappGroupUrl} onChange={(e) => set("whatsappGroupUrl", e.target.value)} placeholder="https://chat.whatsapp.com/…" className={inputCls} />

@@ -128,8 +128,8 @@ export function WebinarModal({ onClose }: { onClose: () => void }) {
             <div className="mt-2 rounded-lg bg-slate-50 p-3 text-[12px] text-slate-500">
               <b>Cómo escribir:</b> cada línea es un párrafo · <code>{"{nombre}"}</code> y{" "}
               <code>{"{iglesia}"}</code> se rellenan solos · <code>**negrita**</code> para resaltar ·{" "}
-              <code>[GRUPO:Texto]</code> = botón al grupo de WhatsApp · <code>[YOUTUBE:Texto]</code> = botón al link de YouTube ·{" "}
-              <code>[OFERTA:Texto]</code> = botón a la oferta del curso.
+              <code>[GRUPO:Texto]</code> = botón al grupo de WhatsApp · <code>[YOUTUBE:Texto]</code> = botón al link del live ·{" "}
+              <code>[REPLAY:Texto]</code> = botón al link de la repetición · <code>[OFERTA:Texto]</code> = botón a la oferta del curso.
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button

@@ -17,13 +17,14 @@ export async function GET() {
   return NextResponse.json({ ok: true, webinars: items });
 }
 
-// POST → crea un webinar nuevo. Body: { title, subtitle?, startsAtLocal, youtubeUrl?, whatsappGroupUrl? }.
+// POST → crea un webinar nuevo. Body: { title, subtitle?, startsAtLocal, youtubeUrl?, replayUrl?, whatsappGroupUrl? }.
 export async function POST(req: Request) {
   let body: {
     title?: string;
     subtitle?: string;
     startsAtLocal?: string;
     youtubeUrl?: string;
+    replayUrl?: string;
     whatsappGroupUrl?: string;
   };
   try {
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
     subtitle: body.subtitle,
     startsAt: localInputToIso(body.startsAtLocal),
     youtubeUrl: body.youtubeUrl,
+    replayUrl: body.replayUrl,
     whatsappGroupUrl: body.whatsappGroupUrl,
   });
   return NextResponse.json({ ok: true, webinar: w });

@@ -18,6 +18,7 @@ export type WebinarConfig = {
   timeZoneMain: string;
   times: { region: string; time: string }[];
   youtubeUrl: string;
+  replayUrl: string;
   whatsappGroupUrl: string;
   joinImage: string;
 };
@@ -80,6 +81,8 @@ export function configForWebinar(w: WebinarRow): WebinarConfig {
     timeZoneMain: WEBINAR.timeZoneMain,
     times: timesFor(w.starts_at),
     youtubeUrl: w.youtube_url,
+    // Link dedicado de la repetición; si está vacío, cae al link del live.
+    replayUrl: w.replay_url || w.youtube_url,
     whatsappGroupUrl: w.whatsapp_group_url,
     joinImage: w.join_image || WEBINAR.joinImage,
   };
@@ -102,6 +105,7 @@ export function resolveWebinarConfig(): WebinarConfig {
     timeZoneMain: WEBINAR.timeZoneMain,
     times: timesFor(WEBINAR.startsAt),
     youtubeUrl: "",
+    replayUrl: "",
     whatsappGroupUrl: WEBINAR.whatsappGroupUrl,
     joinImage: WEBINAR.joinImage,
   };

@@ -12,6 +12,7 @@ export type WebinarRow = {
   starts_at: string;
   duration_min: number;
   youtube_url: string;
+  replay_url: string;
   whatsapp_group_url: string;
   join_image: string;
   active: number;
@@ -106,6 +107,7 @@ export function createWebinar(input: {
   subtitle?: string;
   startsAt: string;
   youtubeUrl?: string;
+  replayUrl?: string;
   whatsappGroupUrl?: string;
   joinImage?: string;
 }): WebinarRow {
@@ -115,8 +117,8 @@ export function createWebinar(input: {
   const info = db
     .prepare(
       `INSERT INTO webinars
-        (slug, title, subtitle, starts_at, duration_min, youtube_url, whatsapp_group_url, join_image, active, created_at)
-       VALUES (@slug,@title,@subtitle,@starts_at,90,@yt,@wa,@img,@active,@now)`
+        (slug, title, subtitle, starts_at, duration_min, youtube_url, replay_url, whatsapp_group_url, join_image, active, created_at)
+       VALUES (@slug,@title,@subtitle,@starts_at,90,@yt,@replay,@wa,@img,@active,@now)`
     )
     .run({
       slug,
@@ -124,6 +126,7 @@ export function createWebinar(input: {
       subtitle: input.subtitle?.trim() || "",
       starts_at: input.startsAt,
       yt: input.youtubeUrl?.trim() || "",
+      replay: input.replayUrl?.trim() || "",
       wa: input.whatsappGroupUrl?.trim() || "",
       img: input.joinImage?.trim() || "/webinar/como-unirte-al-grupo.png",
       active: first ? 1 : 0,
@@ -132,7 +135,7 @@ export function createWebinar(input: {
   return getWebinarById(Number(info.lastInsertRowid))!;
 }
 
-const WEBINAR_FIELDS = ["title", "subtitle", "starts_at", "youtube_url", "whatsapp_group_url", "join_image"] as const;
+const WEBINAR_FIELDS = ["title", "subtitle", "starts_at", "youtube_url", "replay_url", "whatsapp_group_url", "join_image"] as const;
 export function updateWebinar(id: number, fields: Record<string, unknown>): WebinarRow | undefined {
   // Cambio de slug (URL): normaliza el nuevo, guarda el viejo como alias para no
   // romper enlaces ya compartidos, y actualiza el slug del webinar.

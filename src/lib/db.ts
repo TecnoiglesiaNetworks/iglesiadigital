@@ -87,6 +87,7 @@ function init(): Database.Database {
       starts_at          TEXT NOT NULL,
       duration_min       INTEGER NOT NULL DEFAULT 90,
       youtube_url        TEXT NOT NULL DEFAULT '',
+      replay_url         TEXT NOT NULL DEFAULT '',
       whatsapp_group_url TEXT NOT NULL DEFAULT '',
       join_image         TEXT NOT NULL DEFAULT '',
       active             INTEGER NOT NULL DEFAULT 0,
@@ -167,6 +168,15 @@ function init(): Database.Database {
     db.exec(
       "UPDATE leads SET wb_registered=1, wb_status='registrado' WHERE source='webinar' AND wb_registered=0"
     );
+  } catch {}
+
+  // ── Columna nueva en `webinars`: link dedicado de la repetición ────────────
+  // (independiente del link del live; si queda vacío, el correo usa youtube_url).
+  try {
+    const wcols = db.prepare("PRAGMA table_info(webinars)").all() as { name: string }[];
+    if (!wcols.some((x) => x.name === "replay_url")) {
+      addColumn("ALTER TABLE webinars ADD COLUMN replay_url TEXT NOT NULL DEFAULT ''");
+    }
   } catch {}
 
   // ── Migración a múltiples webinars ─────────────────────────────────────────

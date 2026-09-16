@@ -86,6 +86,8 @@ function renderBodyHtml(text: string, l: LeadRow, cfg?: WebinarConfig, reason?: 
     if (grupo) return button(esc(subVars(grupo[1] || "Unirme al grupo de WhatsApp →", l, c)), c.whatsappGroupUrl, "#25D366");
     const yt = line.match(/^\[YOUTUBE(?::\s*(.*?))?\]$/i);
     if (yt) return button(esc(subVars(yt[1] || "Ver el webinar en vivo →", l, c)), c.youtubeUrl, "#FF0000");
+    const replay = line.match(/^\[REPLAY(?::\s*(.*?))?\]$/i);
+    if (replay) return button(esc(subVars(replay[1] || "Ver la repetición →", l, c)), c.replayUrl, "#FF0000");
     const reg = line.match(/^\[REGISTRO(?::\s*(.*?))?\]$/i);
     // Apunta al landing de ESTE webinar (por slug), no al activo, para que las
     // invitaciones por webinar lleven a la persona al evento correcto.
@@ -226,7 +228,7 @@ Si tienes cualquier duda, respóndeme este correo. Estoy para ayudarte.`,
     body: `¡Hola {nombre}!
 ¿No lo pudiste ver en vivo o te perdiste una parte del webinar **{titulo}**? Tranquilo: **aquí está tu oportunidad**. Ya subimos la **repetición completa** para que la veas cuando puedas.
 ⚠️ **Solo estará disponible 48 horas.** Después la bajamos, así que aprovecha para verla (o terminarla) hoy mismo:
-[YOUTUBE:▶️ Ver la repetición ahora →]
+[REPLAY:▶️ Ver la repetición ahora →]
 Y si el webinar te dejó claro que es momento de llevar a **{iglesia}** al mundo digital, recuerda que como asistente tienes el precio especial del Programa Iglesia Digital:
 [OFERTA:Ver el precio especial del curso →]
 Nos vemos dentro. 🙏`,
