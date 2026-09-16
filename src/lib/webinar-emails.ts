@@ -218,6 +218,20 @@ Por haber asistido, tienes acceso a un precio especial. Míralo aquí:
 Si tienes cualquier duda, respóndeme este correo. Estoy para ayudarte.`,
   },
   {
+    key: "replay",
+    label: "Post · Repetición (48 h)",
+    whenLabel: "Al terminar (repetición)",
+    afterHours: 2,
+    subject: "▶️ Aquí está la repetición del webinar (solo 48 h)",
+    body: `¡Hola {nombre}!
+¿No lo pudiste ver en vivo o te perdiste una parte del webinar **{titulo}**? Tranquilo: **aquí está tu oportunidad**. Ya subimos la **repetición completa** para que la veas cuando puedas.
+⚠️ **Solo estará disponible 48 horas.** Después la bajamos, así que aprovecha para verla (o terminarla) hoy mismo:
+[YOUTUBE:▶️ Ver la repetición ahora →]
+Y si el webinar te dejó claro que es momento de llevar a **{iglesia}** al mundo digital, recuerda que como asistente tienes el precio especial del Programa Iglesia Digital:
+[OFERTA:Ver el precio especial del curso →]
+Nos vemos dentro. 🙏`,
+  },
+  {
     key: "s2",
     label: "Post 2 · Historia / dolor",
     whenLabel: "Día 1",
