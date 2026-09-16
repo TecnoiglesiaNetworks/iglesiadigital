@@ -54,17 +54,17 @@ export function CountdownOffer({ deadline }: { deadline?: string }) {
       <span className="rounded-lg bg-panel3 px-2.5 py-1 font-display text-[30px] font-extrabold tabular-nums">
         {pad(v)}
       </span>
-      <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted">{label}</span>
+      <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-white">{label}</span>
     </div>
   );
   const Sep = () => <span className="pb-4 text-[24px] font-bold">:</span>;
 
   return (
     <div className="mb-5 flex flex-col items-center gap-2">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white">
         {done ? "La oferta cerró" : "Esta oferta termina en"}
       </span>
-      <div className={cn("flex items-center gap-1.5", done ? "text-red-500" : "text-accent")}>
+      <div className={cn("flex items-center gap-1.5", done ? "text-red-500" : "text-white")}>
         <Box v={p.d} label="días" />
         <Sep />
         <Box v={p.h} label="hrs" />
