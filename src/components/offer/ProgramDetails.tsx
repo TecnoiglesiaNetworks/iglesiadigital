@@ -3,7 +3,7 @@
 // compra antes de ver el precio. Sin hooks: sirve en server y client components.
 
 const INCLUDES = [
-  "Curso en video de 16 semanas (4 módulos), para avanzar a tu ritmo",
+  "Curso en video en 4 módulos, para avanzar a tu ritmo",
   "Sesiones en vivo por Zoom cada 15 días (dudas y acompañamiento)",
   "Cómo activar el Google Ad Grant: $10,000 USD/mes en publicidad gratis",
   "Cómo hacer y/o modificar tu sitio web + Church Online Platform + streaming",
